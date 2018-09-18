@@ -8,6 +8,11 @@ double vis;		// Dynamic face viscocity
 int minlevel, maxlevel; // Min and max grid level 2^n
 double err;
 
+// Rotor
+double rP;		// Power
+double rD;		// Diameter
+double rx0, ry0;	// Origin	
+
 // Data analysis 
 vertex scalar omega[]; 	// Vorticity 
 
@@ -22,6 +27,12 @@ int main() {
 	L0 = 1.;
 	origin (-0.5, -0.5);
 
+	// Rotor details
+	rP = 10;
+	rD = 0.2;
+	rx0 = 0.5;
+	ry0 = 0.8;
+	
 	run();
 }
 
@@ -47,7 +58,7 @@ event init (t = 0) {
 	do {
 		foreach () {
 			u.x[] = 0;
-			u.y[] = 0; 
+			u.y[] = 0;
 		}
 		boundary ((scalar *) {u});
 		adapting = adapt_wavelet((scalar *){u},(double[]){err,err},maxlevel,minlevel);
@@ -59,6 +70,11 @@ event init (t = 0) {
 }
 
 event adapt (i++) {
+	foreach () {
+		if ((x > rx0 - rD/2) && (x < rx0 + rD/2) && (y == ry0)) {
+			u.y[] = u.y[] // HERE
+		}
+	} 
 	adapt_wavelet((scalar *){u},(double []){err,err},maxlevel,minlevel);
 }
 
@@ -70,6 +86,8 @@ event movies (t += 0.1) {
 		lev[] = level;
 	}
 	boundary ({lev});
+	output_ppm (u.x, file = "ppm2mp4 vel_x.mp4", n = 512, linear = true);
+	output_ppm (u.y, file = "ppm2mp4 vel_y.mp4", n = 512, linear = true);
 	output_ppm (omega, file = "ppm2mp4 vort.mp4", n = 512, linear = true); 
 	output_ppm (lev, file = "pp2mp4 grid_depth.mp4", n = 512, min = minlevel, max = maxlevel);
 }

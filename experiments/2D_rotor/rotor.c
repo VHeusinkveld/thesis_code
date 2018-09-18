@@ -10,7 +10,7 @@ double err;
 
 // Rotor
 double rP;			// Power
-double rD;			// Diameter
+double rD, rW, rA;			// Diameter, Area
 double rx0, ry0;	// Origin	
 
 // Data analysis 
@@ -23,16 +23,17 @@ int main() {
 	err= 0.005;
 	
 	// Grid initialization 
-	init_grid(1<<3);
+	init_grid(1<<5);
 	L0 = 1.;
 	origin (-0.5, -0.5);
 
 	// Rotor details
-	rP = 10;
+	rP = 1000.;
 	rD = 0.2;
 	rx0 = 0.5;
 	ry0 = 0.8;
-	rA = rD
+	rW = 0.05;
+	rA = rW*rD;
 
 	run();
 }
@@ -72,8 +73,9 @@ event init (t = 0) {
 
 event adapt (i++) {
 	foreach () {
-		if ((x > rx0 - rD/2) && (x < rx0 + rD/2) && (y == ry0)) {
-			u.y[] = pow(pow(u.y[], 3.) + (2*rP*pow(Delta,2.))/(rho*pow(rA,2.)) , 1./3.)
+		if ((x > rx0 - rD/2.) && (x < rx0 + rD/2.) && (y <= ry0 + rW/2.) && (y >= ry0 - rW/2.)) {
+			printf("Yes");
+			u.y[] = pow(pow(u.y[], 3.) + 2.*rP*pow(Delta,2.)/(pow(rA,2.)), 1./3.);
 		}
 	} 
 	adapt_wavelet((scalar *){u},(double []){err,err},maxlevel,minlevel);

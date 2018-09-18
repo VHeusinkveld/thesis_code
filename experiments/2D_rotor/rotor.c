@@ -9,8 +9,8 @@ int minlevel, maxlevel; // Min and max grid level 2^n
 double err;
 
 // Rotor
-double rP;		// Power
-double rD;		// Diameter
+double rP;			// Power
+double rD;			// Diameter
 double rx0, ry0;	// Origin	
 
 // Data analysis 
@@ -19,7 +19,7 @@ vertex scalar omega[]; 	// Vorticity
 int main() {
 	// Adaptivity 
 	minlevel = 3;
-	maxlevel = 5;
+	maxlevel = 6;
 	err= 0.005;
 	
 	// Grid initialization 
@@ -32,7 +32,8 @@ int main() {
 	rD = 0.2;
 	rx0 = 0.5;
 	ry0 = 0.8;
-	
+	rA = rD
+
 	run();
 }
 
@@ -43,7 +44,7 @@ u.t[bottom] = dirichlet(0);
 u.n[bottom] = dirichlet(0.);
 u.t[right] = dirichlet(0);
 u.n[right] = dirichlet(0.);
-u.t[left] = dirichlet(1.);
+u.t[left] = dirichlet(0.);
 u.n[left] = dirichlet(0.);
 
 // Initialisation
@@ -72,7 +73,7 @@ event init (t = 0) {
 event adapt (i++) {
 	foreach () {
 		if ((x > rx0 - rD/2) && (x < rx0 + rD/2) && (y == ry0)) {
-			u.y[] = u.y[] // HERE
+			u.y[] = pow(pow(u.y[], 3.) + (2*rP*pow(Delta,2.))/(rho*pow(rA,2.)) , 1./3.)
 		}
 	} 
 	adapt_wavelet((scalar *){u},(double []){err,err},maxlevel,minlevel);

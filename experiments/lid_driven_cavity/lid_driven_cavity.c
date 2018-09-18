@@ -14,7 +14,7 @@ vertex scalar omega[]; 	// Vorticity
 int main() {
 	// Adaptivity 
 	minlevel = 3;
-	maxlevel = 5;
+	maxlevel = 7;
 	err= 0.005;
 	
 	// Grid initialization 
@@ -26,13 +26,13 @@ int main() {
 }
 
 // Boundary conditions
-u.t[top] = dirichlet(0);
+u.t[top] = dirichlet(1.);
 u.n[top] = dirichlet(0.);
 u.t[bottom] = dirichlet(0);
 u.n[bottom] = dirichlet(0.);
 u.t[right] = dirichlet(0);
 u.n[right] = dirichlet(0.);
-u.t[left] = dirichlet(1.);
+u.t[left] = dirichlet(0.);
 u.n[left] = dirichlet(0.);
 
 // Initialisation
@@ -47,7 +47,6 @@ event init (t = 0) {
 	do {
 		foreach () {
 			u.x[] = 0;
-			u.y[] = 0; 
 		}
 		boundary ((scalar *) {u});
 		adapting = adapt_wavelet((scalar *){u},(double[]){err,err},maxlevel,minlevel);

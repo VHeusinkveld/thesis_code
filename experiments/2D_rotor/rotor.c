@@ -24,15 +24,15 @@ int main() {
 	
 	// Grid initialization 
 	init_grid(1<<5);
-	L0 = 1.;
-	origin (-0.5, -0.5);
+	L0 = 10.;
+	origin (0, 0);
 
 	// Rotor details
 	rP = 1000.;
-	rD = 0.2;
-	rx0 = 0.5;
-	ry0 = 0.8;
-	rW = 0.05;
+	rD = 2;
+	rx0 = 5;
+	ry0 = 8;
+	rW = 1;
 	rA = rW*rD;
 
 	run();

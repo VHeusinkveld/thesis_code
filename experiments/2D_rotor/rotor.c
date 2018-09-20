@@ -10,7 +10,7 @@ double err;
 
 // Rotor
 double rP;			// Power
-double rD, rW, rA;			// Diameter, Width, Area
+double rD, rA;			// Diameter, Area
 double rx0, ry0;	// Origin	
 
 // Data analysis 
@@ -19,85 +19,82 @@ vertex scalar omega[]; 	// Vorticity
 int main() {
 	// Adaptivity 
 	minlevel = 3;
-	maxlevel = 7;
+	maxlevel = 9;
 	err= 0.005;
 	
 	// Grid initialization 
-	init_grid(1<<6);
+	init_grid(1<<7);
 	L0 = 10.;
 	origin (0, 0);
 
 	// Rotor details
-	rP = 0.00002;
-	rD = 2 + 0.2*sq(2);  
+	rP = 10;
+	rD = 0.1 + 0.0001*sq(2);  
 	rx0 = 5;
-	ry0 = 5 + 0.2*sq(2);
-	rW = 1; // Keep 1 for 2D 
-	rA = rW*rD;
+	ry0 = 8 + 0.0001*sq(2);
+	rA = rD;
 
 	run();
 }
-
-// Boundary conditions
-u.t[top] = dirichlet(0);
-u.n[top] = dirichlet(0.);
-u.t[bottom] = dirichlet(0);
-u.n[bottom] = dirichlet(0.);
-u.t[right] = dirichlet(0);
-u.n[right] = dirichlet(0.);
-u.t[left] = dirichlet(0.);
-u.n[left] = dirichlet(0.);
 
 // Initialisation
 event init (t = 0) {
 
 	// Constants
-	Re = 1500.;
+	Re = 3000.;
 	vis = 1./Re;
 	
-	/*
-	// Grid + adaptation
-	astats adapting;
-	do {
-		foreach () {
-			u.x[] = 0;
-			u.y[] = 0;
-		}
-		boundary ((scalar *) {u});
-		adapting = adapt_wavelet((scalar *){u},(double[]){err,err},maxlevel,minlevel);
-	} while (adapting.nf);
-	*/
+	// Boundary conditions
+	periodic (right);
+	periodic (bottom);
+
 	// Couple solver to our variables 
 	const face vector muc[]={vis,vis};
 	mu = muc;
 }
 
-event rotor (i++) {
+event rotor (i=1; i++) {
 	foreach () {
+		// Checks if gridcell is in the rotor
 		if ((x + Delta/2. > rx0 - rD/2.) && (x - Delta/2. < rx0 + rD/2.) && 
 			(y - Delta/2. < ry0) && (y + Delta/2. > ry0)) {
 			
-			u.y[] = -2;
-		
-			double d_start = abs(x - (rx0 - rD/2.));
-			double d_end = abs(x - (rx0 + rD/2.));
-			double c = 1.;
-			/*
+			// Takes care of rotor edges 
+			double d_start = fabs(x - (rx0 - rD/2.));
+			double d_end = fabs(x - (rx0 + rD/2.));
+			double c, c1, c2;
+			
 			if (d_start < Delta/2.) {
-				c = d_start/Delta;
+				if ((x - (rx0 - rD/2)) < 0){
+					c1 = (Delta/2. - d_start)/Delta;
+				} else {
+					c1 = (Delta/2. + d_start)/Delta;
+				}
+			} else {
+				c1 = 0.5;
 			}
+
 			if (d_end < Delta/2.){
-				c = d_end/Delta;
+				if (((rx0 + rD/2) - x) < 0){
+					c2 = (Delta/2. - d_end)/Delta;
+				} else {
+					c2 = (Delta/2. + d_end)/Delta;
+				}
+			} else {
+				c2 = 0.5;
 			}
+				
+			c = c1 + c2; // Includes the option of both ends in one cell 
 			
-			double temp = pow(u.y[], 3.) - 2.*c*rP*dt/rA*Delta/Delta;
-			
+			// Calculate actual addition to the kinetic energy 
+			double temp = pow(u.y[], 3.) - 2*c*rP*dt/rA*Delta/Delta;
+
 			if (temp < 0.) {
 				u.y[] = -pow(abs(temp), 1./3.);
 			} else {
 				u.y[] = pow(temp, 1./3.);
 			
-			} */
+			}
 		}
 	} 
 }

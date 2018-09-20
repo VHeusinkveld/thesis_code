@@ -29,9 +29,9 @@ int main() {
 
 	// Rotor details
 	rP = 0.00002;
-	rD = 1 + 0.1*sq(2);  
+	rD = 2 + 0.2*sq(2);  
 	rx0 = 5;
-	ry0 = 5 + 0.1*sq(2);
+	ry0 = 5 + 0.2*sq(2);
 	rW = 1; // Keep 1 for 2D 
 	rA = rW*rD;
 
@@ -52,7 +52,7 @@ u.n[left] = dirichlet(0.);
 event init (t = 0) {
 
 	// Constants
-	Re = 3000.;
+	Re = 1500.;
 	vis = 1./Re;
 	
 	/*
@@ -77,9 +77,11 @@ event rotor (i++) {
 		if ((x + Delta/2. > rx0 - rD/2.) && (x - Delta/2. < rx0 + rD/2.) && 
 			(y - Delta/2. < ry0) && (y + Delta/2. > ry0)) {
 			
+			u.y[] = -2;
+		
 			double d_start = abs(x - (rx0 - rD/2.));
 			double d_end = abs(x - (rx0 + rD/2.));
-			double c = 1;
+			double c = 1.;
 			/*
 			if (d_start < Delta/2.) {
 				c = d_start/Delta;
@@ -87,15 +89,15 @@ event rotor (i++) {
 			if (d_end < Delta/2.){
 				c = d_end/Delta;
 			}
-			*/
-			double temp = pow(u.y[], 3.) - 2.*c*rP*dt*Delta/(pow(rA,2.));
 			
-			if (temp < 0) {
+			double temp = pow(u.y[], 3.) - 2.*c*rP*dt/rA*Delta/Delta;
+			
+			if (temp < 0.) {
 				u.y[] = -pow(abs(temp), 1./3.);
 			} else {
 				u.y[] = pow(temp, 1./3.);
 			
-			}
+			} */
 		}
 	} 
 }

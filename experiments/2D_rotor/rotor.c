@@ -29,9 +29,9 @@ int main() {
 
 	// Rotor details
 	rP = 1000.;
-	rD = 2;
+	rD = 1;  // Keep 1 for 2D 
 	rx0 = 5;
-	ry0 = 8;
+	ry0 = 5 + 0.01*sq(2);
 	rW = 1;
 	rA = rW*rD;
 
@@ -71,13 +71,33 @@ event init (t = 0) {
 	mu = muc;
 }
 
-event adapt (i++) {
+event rotor (i++) {
 	foreach () {
-		if ((x > rx0 - rD/2.) && (x < rx0 + rD/2.) && (y <= ry0 + rW/2.) && (y >= ry0 - rW/2.)) {
-			printf("Yes");
-			u.y[] = pow(pow(u.y[], 3.) + 2.*rP*pow(Delta,2.)/(pow(rA,2.)), 1./3.);
+		if ((x + Delta/2. > rx0 - rD/2.) && (x - Delta/2. < rx0 + rD/2.) && 
+			(y - Delta/2. < ry0) && (y + Delta/2. > ry0)) {
+			double d_start = abs(x - (rx0 - rD/2.));
+			double d_end = abs(x - (rx0 + rD/2.));
+			double c = 1;
+
+			if (d_start < Delta/2.) {
+				c = d_start/Delta;
+			}
+			if (d_end < Delta/2.){
+				c = d_end/Delta;
+			}
+
+			double temp = pow(u.y[], 3.) - 2.*c*rP*pow(Delta,2.)/(pow(rA,2.));
+
+			if temp < 0 {
+				u.y[] = -pow(abs(temp), 1./3.);
+			} else {
+				u.y[] = pow(temp, 1./3.);
+			}		
 		}
 	} 
+}
+
+event adapt (i++) {
 	adapt_wavelet((scalar *){u},(double []){err,err},maxlevel,minlevel);
 }
 

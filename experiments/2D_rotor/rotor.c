@@ -10,7 +10,7 @@ double err;
 
 // Rotor
 double rP;			// Power
-double rD, rW, rA;			// Diameter, Area
+double rD, rW, rA;			// Diameter, Width, Area
 double rx0, ry0;	// Origin	
 
 // Data analysis 
@@ -19,20 +19,20 @@ vertex scalar omega[]; 	// Vorticity
 int main() {
 	// Adaptivity 
 	minlevel = 3;
-	maxlevel = 6;
+	maxlevel = 7;
 	err= 0.005;
 	
 	// Grid initialization 
-	init_grid(1<<5);
+	init_grid(1<<6);
 	L0 = 10.;
 	origin (0, 0);
 
 	// Rotor details
-	rP = 1000.;
-	rD = 1;  // Keep 1 for 2D 
+	rP = 0.00002;
+	rD = 1 + 0.1*sq(2);  
 	rx0 = 5;
-	ry0 = 5 + 0.01*sq(2);
-	rW = 1;
+	ry0 = 5 + 0.1*sq(2);
+	rW = 1; // Keep 1 for 2D 
 	rA = rW*rD;
 
 	run();
@@ -52,9 +52,10 @@ u.n[left] = dirichlet(0.);
 event init (t = 0) {
 
 	// Constants
-	Re = 500.;
+	Re = 3000.;
 	vis = 1./Re;
 	
+	/*
 	// Grid + adaptation
 	astats adapting;
 	do {
@@ -65,7 +66,7 @@ event init (t = 0) {
 		boundary ((scalar *) {u});
 		adapting = adapt_wavelet((scalar *){u},(double[]){err,err},maxlevel,minlevel);
 	} while (adapting.nf);
-
+	*/
 	// Couple solver to our variables 
 	const face vector muc[]={vis,vis};
 	mu = muc;
@@ -75,24 +76,26 @@ event rotor (i++) {
 	foreach () {
 		if ((x + Delta/2. > rx0 - rD/2.) && (x - Delta/2. < rx0 + rD/2.) && 
 			(y - Delta/2. < ry0) && (y + Delta/2. > ry0)) {
+			
 			double d_start = abs(x - (rx0 - rD/2.));
 			double d_end = abs(x - (rx0 + rD/2.));
 			double c = 1;
-
+			/*
 			if (d_start < Delta/2.) {
 				c = d_start/Delta;
 			}
 			if (d_end < Delta/2.){
 				c = d_end/Delta;
 			}
-
-			double temp = pow(u.y[], 3.) - 2.*c*rP*pow(Delta,2.)/(pow(rA,2.));
-
-			if temp < 0 {
+			*/
+			double temp = pow(u.y[], 3.) - 2.*c*rP*dt*Delta/(pow(rA,2.));
+			
+			if (temp < 0) {
 				u.y[] = -pow(abs(temp), 1./3.);
 			} else {
 				u.y[] = pow(temp, 1./3.);
-			}		
+			
+			}
 		}
 	} 
 }
@@ -109,8 +112,8 @@ event movies (t += 0.1) {
 		lev[] = level;
 	}
 	boundary ({lev});
-	output_ppm (u.x, file = "ppm2mp4 vel_x.mp4", n = 512, linear = true);
-	output_ppm (u.y, file = "ppm2mp4 vel_y.mp4", n = 512, linear = true);
+	output_ppm (u.x, file = "ppm2mp4 vel_x.mp4", n = 512, linear = true, min = -1, max = 1);
+	output_ppm (u.y, file = "ppm2mp4 vel_y.mp4", n = 512, linear = true, min = -1, max = 1);
 	output_ppm (omega, file = "ppm2mp4 vort.mp4", n = 512, linear = true); 
 	output_ppm (lev, file = "pp2mp4 grid_depth.mp4", n = 512, min = minlevel, max = maxlevel);
 }

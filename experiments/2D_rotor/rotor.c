@@ -23,14 +23,15 @@ vertex scalar omega[]; 	// Vorticity
  
 
 // Check if gridcell is in fan domain 
-bool in_rotor(double x, double y, double Delta, double rx0, double ry0, double rD) {
+bool near_rotor(double x, double y, double Delta, double rx0, double ry0, double rD) {
 	bool x_dom, y_dom;
 
-	x_dom = (x + Delta/2. > rx0 - rD/2.) && (x - Delta/2. < rx0 + rD/2.);
-	y_dom = (y - Delta/2. < ry0) && (y + Delta/2. > ry0);
+	x_dom = (x + Delta/2. >= rx0 - rD/2.) && (x - Delta/2. <= rx0 + rD/2.);
+	y_dom = (y - Delta/2. <= ry0) && (y + Delta/2. >= ry0);
 
 	return x_dom && y_dom; 
 }
+
 
 
 // Code
@@ -38,22 +39,24 @@ bool in_rotor(double x, double y, double Delta, double rx0, double ry0, double r
 int main() {
 	// Adaptivity 
 	minlevel = 3;
-	maxlevel = 9;
+	maxlevel = 8;
 	err= 0.005;
 	
 	// Grid initialization 
-	init_grid(1<<7);
+	init_grid(1<<6);
 	L0 = 10.;
 	origin (0, 0);
 
 	// Rotor details
-	rTdamp = 0;
-	rP = 100.;
-	rD = 1.89+ 0.1*sqrt(2);  
+	rTdamp = 1.;
+	rD = 1. + 0.00001*sqrt(2);  
 	rx0 = 5.;
-	ry0 = 4.89 + 0.1*sqrt(2);
+	ry0 = 5. + 0.00001*sqrt(2);
 	rA = rD;
-	printf("%g\n", ry0);
+	rP = rA*0.5;
+	
+	DT = 0.1;
+
 	run();
 }
 
@@ -65,8 +68,8 @@ event init(t = 0) {
 	vis = 1./Re;
 	
 	// Boundary conditions
-	//periodic (right);
-	//periodic (bottom);
+	periodic (right);
+	periodic (bottom);
 
 	// Couple solver to our variables 
 	const face vector muc[]={vis,vis};
@@ -74,19 +77,16 @@ event init(t = 0) {
 }
 
 event rotor(i=1; i++) {
-
-	refine(in_rotor(x, y, Delta, rx0, ry0, rD) && level < maxlevel);
-
+		
 	foreach () {
 		// Checks if gridcell is in the rotor
-		if (in_rotor(x, y, Delta, rx0, ry0, rD)) {
+		if (near_rotor(x, y, Delta, rx0, ry0, rD)) {
 			
 			// Takes care of rotor edges 
 			double d_start = fabs(x - (rx0 - rD/2.));
 			double d_end = fabs(x - (rx0 + rD/2.));
 			double c=0, c1=0, c2=0;
 			
-			// TODO solve rotor edges 
 			if (d_start < Delta/2.) {
 				if ((x - (rx0 - rD/2)) < 0){
 					c1 = (Delta/2. - d_start)/Delta;
@@ -102,13 +102,14 @@ event rotor(i=1; i++) {
 					c2 = (Delta/2. + d_end)/Delta;
 				}
 			}
-				
-			c = 1.; //(c1 + c2 > 0) ? c1 + c2 : 1.; // Includes the option of both ends in one cell 
+		
+			// Includes the options of 2 ends in one cell					
+			c = (c1 + c2 > 0) ? ((c1 > 0 && c2 > 0) ? c1 + c2 - Delta : c1 + c2) : 1.; 
 
 			// Calculate actual addition to the kinetic energy
-			double damp = t < rTdamp ? t/rTdamp : 1.; // Linear rotor startup
+			double damp = (t < rTdamp) ? t/rTdamp : 1.; // Linear rotor startup
 			
-			double temp = pow(u.y[], 3.) - damp*c*2.*rP*dt/rA*Delta/Delta;
+			double temp = pow(u.y[], 3.) - damp*c*2.*rP/rA;
 			
 			if (temp < 0.) {
 				u.y[] = -pow(abs(temp), 1./3.);
@@ -116,12 +117,18 @@ event rotor(i=1; i++) {
 				u.y[] = pow(temp, 1./3.);
 			
 			}
+			
 		}
 	} 
+	// TODO is this needed?	
+	boundary((scalar *){u});
+
 }
 
 event adapt(i++) {
 	adapt_wavelet((scalar *){u},(double []){err,err},maxlevel,minlevel);
+	refine(near_rotor(x, y, 4*Delta, rx0, ry0, rD) && level < maxlevel);
+
 }
 
 // Output visuals
@@ -139,7 +146,7 @@ event movies(t += 0.1) {
 }
 
 // Final event
-event end(t += 2; t <= 25) {
+event end(t += 2; t <= 20) {
 	printf("i = %d t = %g\n", i, t);
 }
 

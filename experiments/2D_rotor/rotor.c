@@ -12,11 +12,12 @@ double err;
 double rTdamp;		// Time to start up rotor
 double rP;		// Power
 double rD, rA;		// Diameter, Area
-double rx0, ry0;	// Origin	
+double rx0, ry0;	// Origin
 
 // Data analysis 
 vertex scalar omega[]; 	// Vorticity
- 
+double e_old;
+
 
 // FUNCTIONS
 // =================================================================================
@@ -48,7 +49,7 @@ int main() {
 	origin (0, 0);
 
 	// Rotor details
-	rTdamp = 1.;
+	rTdamp = 5.;
 	rD = 1. + 0.00001*sqrt(2);  
 	rx0 = 5.;
 	ry0 = 5. + 0.00001*sqrt(2);
@@ -64,8 +65,8 @@ int main() {
 event init(t = 0) {
 
 	// Constants
-	Re = 500.;
-	vis = 1./Re;
+	//Re = 30000.;
+	//vis = 1./Re;
 	
 	// Boundary conditions
 	periodic (right);
@@ -74,6 +75,18 @@ event init(t = 0) {
 	// Couple solver to our variables 
 	const face vector muc[]={vis,vis};
 	mu = muc;
+}
+
+event diag(t=0; t+=0.1) {
+	double e = 0.;
+	double rE = rP*(t < rTdamp ? t/rTdamp : (t-(rTdamp*0.5)));
+
+	foreach(reduction(+:e)) {
+		e += 0.5*(u.x[]*u.x[] + u.y[]*u.y[])*sq(Delta);
+	}
+	
+	printf("de=%g, drE=%g, de/drE=%g  \n", e-e_old, rP*0.1, (e-e_old)/(rP*0.1));
+	e_old = 1.*e;
 }
 
 event rotor(i=1; i++) {
@@ -110,14 +123,13 @@ event rotor(i=1; i++) {
 			double damp = (t < rTdamp) ? t/rTdamp : 1.; // Linear rotor startup
 			
 			double temp = pow(u.y[], 3.) - damp*c*2.*rP/rA;
-			
+				
 			if (temp < 0.) {
-				u.y[] = -pow(abs(temp), 1./3.);
+				u.y[] = -pow(fabs(temp), 1./3.);
 			} else {
 				u.y[] = pow(temp, 1./3.);
 			
 			}
-			
 		}
 	} 
 	// TODO is this needed?	
@@ -146,7 +158,7 @@ event movies(t += 0.1) {
 }
 
 // Final event
-event end(t += 2; t <= 20) {
+event end(t += 2; t <= 30) {
 	printf("i = %d t = %g\n", i, t);
 }
 

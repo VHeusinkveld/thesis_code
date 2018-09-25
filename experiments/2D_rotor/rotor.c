@@ -9,7 +9,8 @@ int minlevel, maxlevel; // Min and max grid level 2^n
 double err;
 
 // Rotor
-struct Rotor Rot;
+struct sRotor r;
+struct sRotor_edge re;
 
 // Data analysis 
 vertex scalar omega[]; 	// Vorticity
@@ -18,27 +19,78 @@ double e_old;
 
 // FUNCTIONS
 // =================================================================================
-struct Rotor {	
-	double Tdamp;			// Time to start up rotor
-	double P;			// Power
+struct sRotor {	
+	double rampT;			// Time to start up rotor
+	double P;			    // Power
 	double D, L, A, V;		// Diameter, Thickness, Area ,Volume
 	double x0, y0;			// Origin
 	double theta, phi;		// Polar and Azimuthal angle 
+	double n[3];			// Normal vector 
 };
 
-// Check if gridcell is in fan domain 
-bool near_rotor(double x, double y, double Delta, struct Rotor Rot) {
+struct sRotor_edge {
+	double cx1, cx2, cy1, cy2, cz1, cz2;
+};
+
+void rotor_init() {
+	// Time to ramp up to full power 
+	r.rampT = 5.;
+
+	// Dimensions
+	r.D = 1. + 0.00001*sqrt(2);
+	r.L = 0.3.;
+	r.A = r.D;
+	r.V = r.A*r.L;
+
+	// Location and orientation
+	r.x0 = 5.;
+	r.y0 = 5. + 0.00001*sqrt(2);
+	r.theta = 0.;  					// Polar angle
+	r.phi = M_PI/2.;		     	// Azimuthal angle 
+
+	r.n[0] = cos(r.phi);
+	r.n[1] = sin(r.phi);
+	
+	// Power density
+	r.P = r.V*0.5;
+}
+
+bool rotor_domain(double x, double y, double z, double Delta, struct Rotor Rot) {
 	bool x_dom, y_dom;
 
-	double xt = 1.*x;
-	double yt = 1.*y;
+	double xt = x*cos(r.phi) - y*sin(r.phi);
+	double yt = x*sin(r.phi) + y*cos(r.phi);
 
-	x_dom = (xt + Delta/2. >= Rot.x0 - Rot.D/2.) && (xt - Delta/2. <= Rot.x0 + Rot.D/2.);
-	y_dom = (yt + Delta/2. >= Rot.y0 - Rot.L/2.) && (yt - Delta/2. <= Rot.y0 + Rot.L/2.);
+	x_dom = (xt + Delta/2. >= r.x0 - r.D/2.) && (xt - Delta/2. <= r.x0 + r.D/2.);
+	y_dom = (yt + Delta/2. >= r.y0 - r.L/2.) && (yt - Delta/2. <= r.y0 + r.L/2.);
 		
 
 	return x_dom && y_dom; 
 }
+/*
+void rotor_edges(struct sRotor_edge re) {
+
+}*/
+
+double rotor_velocity(struct sRotor r){
+	// Calculate actual addition to the kinetic energy
+	double damp = (t < r.rampT) ? t/r.rampT : 1.; // Linear rotor startup
+	double temp_u[2] = {u.x[], u.y[]};
+
+	for (i = 0; i <= 1; i++) {
+		double temp = pow(temp_u[i], 3.) - damp*c*2.*r.P*sq(r.n[i])/r.V;
+
+		if (temp < 0.) {
+			temp_u[i] = -pow(fabs(temp), 1./3.);
+		} else {
+			temp_u[i] = pow(temp, 1./3.);
+		}
+	}
+
+	u.x[] = temp_u[0];
+	u.y[] = temp_u[1];
+}
+
 
 	
 // Code
@@ -54,22 +106,7 @@ int main() {
 	L0 = 10.;
 	origin (0, 0);
 
-	// Rotor details
-	Rot.Tdamp = 5.;
-
-	Rot.D = 1. + 0.00001*sqrt(2);
-	Rot.L = 0.;
-	Rot.A = Rot.D;
-	Rot.V = Rot.A;
-
-	Rot.x0 = 5.;
-	Rot.y0 = 5. + 0.00001*sqrt(2);
-	
-	Rot.theta = 0.;
-	Rot.phi = 0.;
-	
-	Rot.P = Rot.V*0.5;
-	
+	rotor_init()
 	DT = 0.1;
 
 	run();
@@ -79,8 +116,8 @@ int main() {
 event init(t = 0) {
 
 	// Constants
-	//Re = 30000.;
-	//vis = 1./Re;
+	Re = 30000.;
+	vis = 1./Re;
 	
 	// Boundary conditions
 	periodic (right);
@@ -93,68 +130,31 @@ event init(t = 0) {
 
 event diag(t=0; t+=0.5) {
 	double e = 0.;
-	double rE = Rot.P*(t < Rot.Tdamp ? t/Rot.Tdamp : (t-(Rot.Tdamp*0.5)));
+	double rE = r.P*(t < r.rampT ? t/r.rampT : (t-(r.rampT*0.5)));
 
 	foreach(reduction(+:e)) {
 		e += 0.5*(u.x[]*u.x[] + u.y[]*u.y[])*sq(Delta);
 	}
 	
-	printf("de=%g, drE=%g, de/drE=%g  \n", e-e_old, Rot.P*0.5, (e-e_old)/(Rot.P*0.5));
+	printf("de=%g, drE=%g, de/drE=%g  \n", e-e_old, r.P*0.5, (e-e_old)/(r.P*0.5));
 	e_old = 1.*e;
 }
 
 event forcing(i=1; i++) {
-		
+
 	foreach () {
 		// Checks if gridcell is in the rotor
-		if (near_rotor(x, y, Delta, Rot)) {
-			
-			// Takes care of rotor edges 
-			double d_start = fabs(x - (Rot.x0 - Rot.D/2.));
-			double d_end = fabs(x - (Rot.x0 + Rot.D/2.));
-			double c=0, c1=0, c2=0;
-			
-			if (d_start < Delta/2.) {
-				if ((x - (Rot.x0 - Rot.D/2)) < 0){
-					c1 = (Delta/2. - d_start)/Delta;
-				} else {
-					c1 = (Delta/2. + d_start)/Delta;
-				}
-			}
-			
-			if (d_end < Delta/2.){
-				if (((Rot.x0 + Rot.D/2) - x) < 0){
-					c2 = (Delta/2. - d_end)/Delta;
-				} else {
-					c2 = (Delta/2. + d_end)/Delta;
-				}
-			}
-		
-			// Includes the options of 2 ends in one cell					
-			c = (c1 + c2 > 0) ? ((c1 > 0 && c2 > 0) ? c1 + c2 - Delta : c1 + c2) : 1.; 
-
-			// Calculate actual addition to the kinetic energy
-			double damp = (t < Rot.Tdamp) ? t/Rot.Tdamp : 1.; // Linear rotor startup
-			
-			double temp = pow(u.y[], 3.) - damp*c*2.*Rot.P/Rot.V;
-				
-			if (temp < 0.) {
-				u.y[] = -pow(fabs(temp), 1./3.);
-			} else {
-				u.y[] = pow(temp, 1./3.);
-			
-			}
-			//u.y[] -= dt*(-1 - u.y[]);
+		if (rotor_domain(x, y, Delta, Rot)) {
+			//rotor_edges();
+			rotor_velocity();
 		}
 	} 
-	// TODO is this needed?	
-	boundary((scalar *){u});
 
 }
 
 event adapt(i++) {
 	adapt_wavelet((scalar *){u},(double []){err,err},maxlevel,minlevel);
-	refine(near_rotor(x, y, 4*Delta, Rot) && level < maxlevel);
+	refine(rotor_domain(x, y, 4*Delta, Rot) && level < maxlevel);
 
 }
 

@@ -76,10 +76,9 @@ void rotor_edges(struct sRotor_edge re) {
 double rotor_velocity(vector u, struct sRotor r){
 	// Calculate actual addition to the kinetic energy
 	double damp = (t < r.rampT) ? t/r.rampT : 1.; // Linear rotor startup
-	
 	double temp; 
 
-	temp = pow(u.x[0,0], 3.) - damp*c*2.*r.P*sq(r.n[0])/r.V;
+	temp = pow(u.x, 3.) - damp*c*2.*r.P*sq(r.n[0])/r.V;
 
 	if (temp < 0.) {
 		u.x[] = -pow(fabs(temp), 1./3.);
@@ -94,8 +93,6 @@ double rotor_velocity(vector u, struct sRotor r){
 	} else {
 		u.y[] = pow(temp, 1./3.);
 	}
-
-
 }*/
 
 

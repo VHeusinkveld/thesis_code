@@ -27,8 +27,8 @@ z = np.linspace(0, 10, 20) - z0
 [X, Y, Z] = np.meshgrid(x, y, z)
 
 
-Plane_up = n[0]*X + n[1]*Y + n[2]*Z - L/2 < 0
-Plane_down = n[0]*X + n[1]*Y + n[2]*Z + L/2 > 0
+Plane_up = -(n[0]*X + n[1]*Y + n[2]*Z) - L/2 < 0
+Plane_down = -(n[0]*X + n[1]*Y + n[2]*Z) + L/2 > 0
 
 Sphere = X**2 + Y**2 + Z**2 < R**2
 
@@ -38,3 +38,8 @@ fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
 ax.voxels(Puck, edgecolor='k')
 
+ax.set_xlabel('X axis')
+ax.set_ylabel('Y axis')
+ax.set_zlabel('Z axis')
+
+plt.show()

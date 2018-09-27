@@ -2,39 +2,36 @@ import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
-Phi = np.arange(0, 2*np.pi, 2*np.pi/100)
-Theta = np.arange(0, np.pi, np.pi/100) # Polar angle
+Phi = np.arange(0, 2.1*np.pi, 2*np.pi/30)
+Theta = np.arange(0, np.pi, np.pi/30) # Polar angle
 
 [theta, phi] = np.meshgrid(Theta, Phi)
 
-nx = np.sin(theta)*np.cos(phi)
-ny = np.sin(theta)*np.sin(phi)
-nz = np.cos(theta)
+n = np.array([np.sin(theta)*np.cos(phi), np.sin(theta)*np.sin(phi), np.cos(theta)], dtype = float)
+v = np.array([1, 0, 0], dtype  = float)
 
-W = 1
+W = 10
 
-vx = 0
-vy = 0
-vz = 0
+vn = 0*n
+for i in range(3):
+    wsgn = np.sign(n[i]*v[i]) + (n[i]*v[i] == 0)*np.sign(n[i])
+    w = np.array([wsgn*W*n[i]**2],  dtype = float)
+    vsgn =  1*(v[i] >= 0) * ((v[i]**2 + w) > 0) + \
+           -1*(v[i] >= 0) * ((v[i]**2 + w) < 0) + \
+            1*(v[i] <  0) * ((v[i]**2 + w) < 0) + \
+           -1*(v[i] <  0) * ((v[i]**2 + w) > 0) 
+    
+    vn[i] = vsgn*np.sqrt(np.abs(v[i]**2 + w))
 
-Wx = np.sign(nx)*W*nx**2
-Wy = np.sign(ny)*W*ny**2
-Wz = np.sign(nz)*W*nz**2
-
-vxn = np.sign(vx**2 + Wx)*np.sqrt(np.abs(vx**2 + Wx))
-vyn = np.sign(vy**2 + Wy)*np.sqrt(np.abs(vy**2 + Wy))
-vzn = np.sign(vz**2 + Wz)*np.sqrt(np.abs(vz**2 + Wz))
-
-
-Ekin_proj = vxn**2 + vyn**2 + vzn**2
+#Ekin_proj = vxn**2 + vyn**2 + vzn**2
 
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
-ax.plot_surface(vxn, vyn, vzn)
+ax.plot_surface(vn[0], vn[1], vn[2])
 
-ax.set_xlim(np.min(vxn), np.max(vxn))
-ax.set_ylim(np.min(vyn), np.max(vyn))
-ax.set_zlim(np.min(vzn), np.max(vzn))
+ax.set_xlim(np.min(vn[0]), np.max(vn[0]))
+ax.set_ylim(np.min(vn[1]), np.max(vn[1]))
+ax.set_zlim(np.min(vn[2]), np.max(vn[2]))
 
 
 ax.set_xlabel('X axis')

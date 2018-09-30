@@ -39,28 +39,28 @@ struct sRotor rotor_init() {
     
 	struct sRotor rot;
 	
-    	// Set variables 
-    	rot.rampT = 0.;
+    // Set variables 
+    rot.rampT = 0.;
 	rot.R = 0.25  + 0.00001*sqrt(2);     
 	rot.W = 0.1   + 0.00001*sqrt(2);                      
-    	rot.Prho = 1.;
+    rot.Prho = 1.;
     
-   	 rot.x0 = rot.y0 = rot.z0 = L0/2.;
+   	rot.x0 = rot.y0 = rot.z0 = L0/2.;
 	rot.z0 = 0.;
-	rot.theta = 0.;          // Polar angle
-	rot.phi = 0.;		            // Azimuthal angle 
+	rot.theta = 0.; // Polar angle
+	rot.phi = 0.;	// Azimuthal angle 
 
-    	// Set normal vectors 
+   	// Set normal vectors 
    	rot.nr[0] = sin(rot.theta)*cos(rot.phi);
 	rot.nr[1] = sin(rot.theta)*sin(rot.phi);
 	rot.nr[2] = cos(rot.theta);
 
 	rot.nf[0] = sin(rot.theta)*cos(-rot.phi + M_PI/2.);
-    	rot.nf[1] = sin(rot.theta)*sin(-rot.phi + M_PI/2.);
-    	rot.nf[2] = cos(rot.theta);
+    rot.nf[1] = sin(rot.theta)*sin(-rot.phi + M_PI/2.);
+    rot.nf[2] = cos(rot.theta);
 
-    	// Calculate consequences
-    	rot.A = 1.*rot.R;                      
+    // Calculate consequences
+    rot.A = 1.*rot.R;                      
 	rot.V = rot.A*rot.W;
 	rot.P = rot.V*rot.Prho;
 
@@ -69,15 +69,15 @@ struct sRotor rotor_init() {
 
 /* Function returning the volume fractions of a fan object */
 void rotor_coord(struct sRotor rot) {
-    	scalar sph[], plnu[], plnd[];
-    	fan.prolongation = fraction_refine; // Tell basilisk it is a volume field
-    	fraction(sph, -sq((x - rot.x0)) - sq((y - rot.y0)) - sq((z - rot.z0)) + sq(rot.R));
-    	fraction(plnu, rot.nr[0]*(x - rot.x0) + rot.nr[1]*(y - rot.y0) + rot.nr[2]*(z - rot.z0) + rot.W/2.);
-    	fraction(plnd, -rot.nr[0]*(x - rot.x0) + -rot.nr[1]*(y - rot.y0) + -rot.nr[2]*(z - rot.z0) + rot.W/2.);
+    scalar sph[], plnu[], plnd[];
+    fan.prolongation = fraction_refine; // Tell basilisk it is a volume field
+    fraction(sph, -sq((x - rot.x0)) - sq((y - rot.y0)) - sq((z - rot.z0)) + sq(rot.R));
+    fraction(plnu, rot.nr[0]*(x - rot.x0) + rot.nr[1]*(y - rot.y0) + rot.nr[2]*(z - rot.z0) + rot.W/2.);
+    fraction(plnd, -rot.nr[0]*(x - rot.x0) + -rot.nr[1]*(y - rot.y0) + -rot.nr[2]*(z - rot.z0) + rot.W/2.);
     
-    	foreach () {
-      		fan[] = sph[] * plnu[] * plnd[];
-    	}
+    foreach () {
+    	fan[] = sph[] * plnu[] * plnd[];
+    }
         
 }
 
@@ -91,8 +91,8 @@ Main Code, Events
 /* Initialisation function */
 int main() {
 
-    	// Grid variables 
-    	init_grid(2<<7);
+    // Grid variables 
+    init_grid(2<<7);
    	double L0 = 1.;
    	X0 = Y0 = Z0 = 0.;
 
@@ -109,19 +109,20 @@ int main() {
 
   	foreach_dimension() {
    		periodic (right);
-    	}
-    	run();
+    }
+
+    run();
 }
 
 /* Forcing by the rotor */
 event forcing(i = 1; i++) {
+	double ugoal = 1.;
 	foreach() {
-        	if(fan[] > 0.) {
+        if(fan[] > 0.) {
 			printf(" yes");
-            		double ugoal = 1.;
-            		u.y[] = u.y[] + (ugoal - u.y[])*dt;
-        	}
-    	}
+            u.y[] = u.y[] + (ugoal - u.y[])*dt;
+        }
+    }
 }
 
 /* Progress event */
@@ -136,7 +137,7 @@ event adapt(i++) {
 
 /* Visualisation */
 event movies(t += 0.1) {
-    	vertex scalar omega[]; 	// Vorticity
+    vertex scalar omega[]; 	// Vorticity
 	scalar lev[];	 	// Grid depth 
 	foreach () {
 		omega[] = ((u.y[1,0] - u.y[-1,0]) - (u.x[0,1] - u.x[0,-1]))/(2*Delta); // Curl(u) 

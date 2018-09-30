@@ -21,7 +21,7 @@ Data structures
 struct sRotor {	
 	double rampT;			// Time to start up rotor
 	double P, Prho;			// Power, powerdensity 
-	double R, W, A, V;		// Diameter, Thickness, Area ,Volume
+	double rot, W, A, V;		// Diameter, Thickness, Area ,Volume
 	double x0, y0, z0;		// Origin of rotor
 	double theta, phi;		// Polar and Azimuthal angle 
 	double nf[3], nr[3];	        // Normal vector fan, rotation 
@@ -36,44 +36,44 @@ Functions
 /* Function returning the sRotor structure */
 struct sRotor rotor_init() {
     
-	struct sRotor r;
+	struct sRotor rot;
 	
     // Set variables 
-    r.rampT = 2.;
-	r.R = 1.  + 0.00001*sqrt(2);     
-	r.W = 0.2 + 0.00001*sqrt(2);                      
-    r.Prho = 0.1;
+    rot.rampT = 2.;
+	rot.rot = 1.  + 0.00001*sqrt(2);     
+	rot.W = 0.2 + 0.00001*sqrt(2);                      
+    rot.Prho = 0.1;
     
-    r.x0 = r.y0 = r.z0 = 5.;
-	r.theta = M_PI/2.;          // Polar angle
-	r.phi = 0.;		            // Azimuthal angle 
+    rot.x0 = rot.y0 = rot.z0 = 5.;
+	rot.theta = M_PI/2.;          // Polar angle
+	rot.phi = 0.;		            // Azimuthal angle 
 
     // Set normal vectors 
-    r.nr[0] = sin(r.theta)*cos(r.phi);
-	r.nr[1] = sin(r.theta)*sin(r.phi);
-	r.nr[2] = cos(r.theta);
+    rot.nr[0] = sin(rot.theta)*cos(rot.phi);
+	rot.nr[1] = sin(rot.theta)*sin(rot.phi);
+	rot.nr[2] = cos(rot.theta);
 
-	r.nf[0] = sin(r.theta)*cos(-r.phi + M_PI/2.);
-    r.nf[1] = sin(r.theta)*sin(-r.phi + M_PI/2.);
-    r.nf[2] = cos(r.theta);
+	rot.nf[0] = sin(rot.theta)*cos(-rot.phi + M_PI/2.);
+    rot.nf[1] = sin(rot.theta)*sin(-rot.phi + M_PI/2.);
+    rot.nf[2] = cos(rot.theta);
 
     // Calculate consequences
-    r.A = 1.*r.R;                      
-	r.V = r.A*r.W;
-	r.P = r.V*r.Prho;
+    rot.A = 1.*rot.rot;                      
+	rot.V = rot.A*rot.W;
+	rot.P = rot.V*rot.Prho;
 
-	return r;
+	return rot;
 }
 
 /* Function returning the volume fractions of a fan object */
-scalar rotor_coord(struct sRotor r) {
+scalar rotor_coord(struct sRotor rot) {
 
     scalar fan[], sph[], plnu[], plnd[];
     fan.prolongation = fraction_refine; // Tell basilisk it is a volume field
 
-    fraction(sph, -sq((x - r.x0)) - sq((y - r.y0)) - sq((z - r.z0)) + sq(r.R));
-    fraction(plnu, r.nr[0]*(x - r.x0) + r.nr[1]*(y - r.y0) + r.nr[2]*(z - r.z0) + r.W/2.);
-    fraction(plnd, -r.nr[0]*(x - r.x0) + -r.nr[1]*(y - r.y0) + -r.nr[2]*(z - r.z0) + r.W/2.);
+    fraction(sph, -sq((x - rot.x0)) - sq((y - rot.y0)) - sq((z - rot.z0)) + sq(rot.rot));
+    fraction(plnu, rot.nr[0]*(x - rot.x0) + rot.nr[1]*(y - rot.y0) + rot.nr[2]*(z - rot.z0) + rot.W/2.);
+    fraction(plnd, -rot.nr[0]*(x - rot.x0) + -rot.nr[1]*(y - rot.y0) + -rot.nr[2]*(z - rot.z0) + rot.W/2.);
     
     foreach () {
       fan[] = sph[] * plnu[] * plnd[];
@@ -98,8 +98,8 @@ int main() {
     X0 = Y0 = Z0 = 0.;
 
     // Initialize physics 
-    struct sRotor ro = rotor_init(); 
-    fan = rotor_coord(*ro);
+    struct sRotor rot = rotor_init(); 
+    fan = rotor_coord(rot);
     //mu = {0, 0, 0}
 
     // Adaptivity

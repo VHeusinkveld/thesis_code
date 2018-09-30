@@ -9,8 +9,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
-theta = np.pi/2
-phi = 0
+theta = np.pi/4
+phi = np.pi/4
 
 n =  np.array([np.sin(theta)*np.cos(-phi + np.pi/2), np.sin(theta)*np.sin(-phi + np.pi/2), np.cos(theta)], dtype=float)
 npu = np.array([np.sin(theta)*np.cos(phi), np.sin(theta)*np.sin(phi), np.cos(theta)], dtype=float)
@@ -39,9 +39,10 @@ Puck = Plane_up*Plane_down*Sphere
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
 ax.voxels(Puck, edgecolor='k')
-ax.quiver(x0,  y0, z0, 5*npu[0], 5*npu[1], 5*npu[2], color='g')
+ax.quiver(x0,  y0, z0, npu[0], npu[1], npu[2], length=6.25, color='y')
 ax.set_xlabel('X axis')
 ax.set_ylabel('Y axis')
 ax.set_zlabel('Z axis')
+ax.set_aspect('equal', 'box')
 
 plt.show()

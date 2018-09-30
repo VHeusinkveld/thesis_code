@@ -2,20 +2,20 @@
 #include "utils.h"
 #include "fractions.h"
 #include "view.h"
-
+//TODO center drawing function with origin
 
 int main()
 {
   init_grid(128);
   double L0 = 1.;
-  X0 = Y0 = Z0 = -L0/2.;
+  X0 = Y0 = Z0 = 0.;
   
   double R = 0.25;
   double w = 0.10;
   
-  double xf = 0.;
-  double yf = 0.;
-  double zf = 0.;
+  double xf = L0/2.;
+  double yf = L0/2.;
+  double zf = L0/2.;
   scalar fan[], sph[], plane[];
   fan.prolongation = fraction_refine;
   view(theta = 0.1, phi = 0.3);
@@ -23,7 +23,7 @@ int main()
   double rTheta = 0.;  
   double rPhi = 0.;
 
-  double steps = 121.;
+  double steps = 20.;
   for (double i = 0.; i < steps; i+=1.)
   {
     if(i<=40.){
@@ -44,10 +44,10 @@ int main()
     double rn[3] = {sin(rTheta)*cos(-rPhi + M_PI/2.), sin(rTheta)*sin(-rPhi + M_PI/2.), cos(rTheta)};
 
     fraction(sph, -sq((x - xf)) - sq((y - yf)) - sq((z - zf)) + sq(R));
-    fraction(plane, rn[0]*x + rn[1]*y + rn[2]*z + w/2.);
+    fraction(plane, rn[0]*(x-xf) + rn[1]*(y-yf) + rn[2]*(z-zf) + w/2.);
     foreach ()
       fan[] = sph[] * plane[];
-    fraction(plane, -rn[0]*x - rn[1]*y - rn[2]*z + w/2.);
+    fraction(plane, -rn[0]*(x-xf) - rn[1]*(y-yf) - rn[2]*(z-zf) + w/2.);
     foreach ()
       fan[] *= plane[];
     clear();

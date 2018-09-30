@@ -2,6 +2,11 @@
 #include "navier-stokes/centered.h"
 #include "fractions.h"
 
+/*
+============================================================================
+Global variables 
+============================================================================
+*/
 
 int minlevel, maxlevel;
 double eps;
@@ -49,8 +54,8 @@ struct sRotor rotor_init() {
 	r.nr[2] = cos(r.theta);
 
 	r.nf[0] = sin(r.theta)*cos(-r.phi + M_PI/2.);
-             r.nf[1] = sin(r.theta)*sin(-r.phi + M_PI/2.);
-            r.nf[2] = cos(r.theta);
+    r.nf[1] = sin(r.theta)*sin(-r.phi + M_PI/2.);
+    r.nf[2] = cos(r.theta);
 
     // Calculate consequences
     r.A = 1.*r.R;                      
@@ -73,6 +78,7 @@ scalar rotor_coord(struct sRotor r) {
     foreach () {
       fan[] = sph[] * plnu[] * plnd[];
     }
+    
 	return fan;
 }
 

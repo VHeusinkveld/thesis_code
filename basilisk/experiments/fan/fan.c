@@ -99,7 +99,7 @@ int main() {
 
     // Initialize physics 
     struct sRotor ro = rotor_init(); 
-    fan = rotor_coord(ro);
+    fan = rotor_coord(*ro);
     //mu = {0, 0, 0}
 
     // Adaptivity

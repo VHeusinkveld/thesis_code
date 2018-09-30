@@ -2,6 +2,11 @@
 #include "navier-stokes/centered.h"
 #include "fractions.h"
 
+
+int minlevel, maxlevel;
+double eps;
+scalar fan[];
+
 /*
 ============================================================================
 Data structures
@@ -11,11 +16,66 @@ Data structures
 struct sRotor {	
 	double rampT;			// Time to start up rotor
 	double P, Prho;			// Power, powerdensity 
-	double R, L, A, V;		// Diameter, Thickness, Area ,Volume
+	double R, W, A, V;		// Diameter, Thickness, Area ,Volume
 	double x0, y0, z0;		// Origin of rotor
 	double theta, phi;		// Polar and Azimuthal angle 
-	double nf[3], nr[3];	    // Normal vector fan, rotation 
+	double nf[3], nr[3];	        // Normal vector fan, rotation 
 };
+
+/*
+============================================================================
+Functions
+============================================================================
+*/
+
+/* Function returning the sRotor structure */
+struct sRotor rotor_init() {
+    
+	struct sRotor r;
+	
+    // Set variables 
+    r.rampT = 2.;
+	r.R = 1.  + 0.00001*sqrt(2);     
+	r.W = 0.2 + 0.00001*sqrt(2);                      
+    r.Prho = 0.1;
+    
+    r.x0 = r.y0 = r.z0 = 5.;
+	r.theta = M_PI/2.;          // Polar angle
+	r.phi = 0.;		            // Azimuthal angle 
+
+    // Set normal vectors 
+    r.nr[0] = sin(r.theta)*cos(r.phi);
+	r.nr[1] = sin(r.theta)*sin(r.phi);
+	r.nr[2] = cos(r.theta);
+
+	r.nf[0] = sin(r.theta)*cos(-r.phi + M_PI/2.);
+             r.nf[1] = sin(r.theta)*sin(-r.phi + M_PI/2.);
+            r.nf[2] = cos(r.theta);
+
+    // Calculate consequences
+    r.A = 1.*r.R;                      
+	r.V = r.A*r.W;
+	r.P = r.V*r.Prho;
+
+	return r;
+}
+
+/* Function returning the volume fractions of a fan object */
+scalar rotor_coord(struct sRotor r) {
+
+    scalar fan[], sph[], plnu[], plnd[];
+    fan.prolongation = fraction_refine; // Tell basilisk it is a volume field
+
+    fraction(sph, -sq((x - r.x0)) - sq((y - r.y0)) - sq((z - r.z0)) + sq(r.R));
+    fraction(plnu, r.nr[0]*(x - r.x0) + r.nr[1]*(y - r.y0) + r.nr[2]*(z - r.z0) + r.W/2.);
+    fraction(plnd, -r.nr[0]*(x - r.x0) + -r.nr[1]*(y - r.y0) + -r.nr[2]*(z - r.z0) + r.W/2.);
+    
+    foreach () {
+      fan[] = sph[] * plnu[] * plnd[];
+    }
+	return fan;
+}
+
 
 /*
 ============================================================================
@@ -32,15 +92,14 @@ int main() {
     X0 = Y0 = Z0 = 0.;
 
     // Initialize physics 
-    sturct sRotor r;
-    scalar fan[];
-    r = rotor_init();  
-    fan = rotor_coord(r);
+    struct sRotor ro = rotor_init(); 
+    fan = rotor_coord(ro);
     //mu = {0, 0, 0}
 
     // Adaptivity
-    int minlevel = 4, maxlevel = 8;
-    double eps = 0.05;
+    minlevel = 4; 
+    maxlevel = 8;
+    eps = 0.05;
 
     foreach_dimension() {
         periodic (right);
@@ -82,59 +141,3 @@ event movies(t += 0.1) {
 	output_ppm (lev, file = "pp2mp4 grid_depth.mp4", n = 512, min = minlevel, max = maxlevel);
 }
 
-
-
-/*
-============================================================================
-Functions
-============================================================================
-*/
-
-/* Function returning the sRotor structure */
-struct sRotor rotor_init() {
-    // Init structure
-    struct sRotor r;
-
-    // Set variables 
-    r.rampT = 2.;
-	r.R = 1.  + 0.00001*sqrt(2);     
-	r.W = 0.2 + 0.00001*sqrt(2);                      
-    r.Prho = 0.1;
-    
-    r.x0 = r.y0 = r.z0 = 5.;
-	r.theta = M_PI/2.;          // Polar angle
-	r.phi = 0.;		            // Azimuthal angle 
-
-    // Set normal vectors 
-    r.nr = {sin(r.theta)*cos(r.phi),
-             sin(r.theta)*sin(r.phi),
-             cos(r.theta)};
-
-	r.nf = {sin(r.theta)*cos(-r.phi + M_PI/2.), 
-             sin(r.theta)*sin(-r.phi + M_PI/2.), 
-             cos(r.theta)};
-
-    // Calculate consequences
-    r.A = r.R;                      
-	r.V = r.A*r.L;
-	r.P = r.V*r.Prho;
-
-    return r;
-}
-
-/* Function returning the volume fractions of a fan object */
-scalar rotor_coord(r) {
-
-    scalar fan[], sph[], plnu[], plnd[];
-    fan.prolongation = fraction_refine; // Tell basilisk it is a volume field
-
-    fraction(sph, -sq((x - r.x0)) - sq((y - r.y0)) - sq((z - r.z0)) + sq(r.R));
-    fraction(plnu, r.nr[0]*(x - r.x0) + r.nr[1]*(y - r.y0) + r.nr[2]*(z - r.z0) + r.W/2.);
-    fraction(plnd, -r.nr[0]*(x - r.x0) + -r.nr[1]*(y - r.y0) + -r.nr[2]*(z - r.z0) + r.W/2.);
-    
-    foreach () {
-      fan[] = sph[] * plnu[] * plnd[];
-    }
-
-    return fan;
-}

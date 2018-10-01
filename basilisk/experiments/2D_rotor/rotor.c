@@ -38,21 +38,21 @@ void rotor_init() {
 
 	// Dimensions
 	r.D = 1. + 0.00001*sqrt(2);
-	r.L = 0.2;
+	r.L = 0.;
 	r.A = r.D;
-	r.V = r.A*r.L;
+	r.V = r.A;
 
 	// Location and orientation
 	r.x0 = 5.;
 	r.y0 = 5. + 0.00001*sqrt(2);
 	r.theta = 0.;  			// Polar angle
-	r.phi = M_PI/3.;		// Azimuthal angle 
+	r.phi = 0.;		// Azimuthal angle 
 
 	r.n[0] = sin(r.phi);
 	r.n[1] = cos(r.phi);
 	
 	// Power density
-	r.P = r.V*0.1;
+	r.P = r.V*0.3;
 }
 
 bool rotor_domain(double x, double y, double Delta, struct sRotor r) {
@@ -106,7 +106,7 @@ int main() {
 	err= 0.01;
 	
 	// Grid initialization 
-	init_grid(1<<8);
+	init_grid(1<<9);
 	L0 = 10.;
 	origin (0, 0);
 
@@ -155,7 +155,7 @@ event forcing(i=1; i++) {
 			double damp = (t < r.rampT) ? t/r.rampT : 1.; // Linear rotor startup
 			double temp; 
 
-			temp = pow(u.x[], 3.) + damp*2.*r.P*sq(r.n[0])*Delta/r.V;
+			temp = pow(u.x[], 3.) + damp*2.*r.P*sq(r.n[0])/r.V;
 
 			if (temp < 0.) {
 				u.x[] = -pow(fabs(temp), 1./3.);
@@ -163,7 +163,7 @@ event forcing(i=1; i++) {
 				u.x[] = pow(temp, 1./3.);
 			}
 
-			temp = pow(u.y[], 3.) + damp*2.*r.P*sq(r.n[1])*Delta/r.V;
+			temp = pow(u.y[], 3.) + damp*2.*r.P*sq(r.n[1])/r.V;
 
 			if (temp < 0.) {
 				u.y[] = -pow(fabs(temp), 1./3.);
@@ -197,7 +197,7 @@ event movies(t += 0.1) {
 }
 
 // Final event
-event end(t += 2; t <= 10) {
+event end(t += 2; t <= 20) {
 	printf("i = %d t = %g\n", i, t);
 }
 

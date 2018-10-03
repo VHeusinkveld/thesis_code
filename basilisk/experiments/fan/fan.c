@@ -5,24 +5,19 @@
 
 /*
 ============================================================================
-Global variables 
+Declarations
 ============================================================================
 */
 
+/* Global variables */
 int minlevel, maxlevel;
 double eps;
 struct sRotor rot; 
 scalar fan[];
 
-/*
-============================================================================
-Declarations
-============================================================================
-*/
-
 /* Functions */
 void rotor_init(); 
-void rotor_update(double theta, double phi);
+void rotor_update();
 void rotor_coord();
 void rotor_forcing();
 
@@ -46,7 +41,7 @@ Main Code, Events
 int main() {
 
     	// Grid variables 
-    	init_grid(2<<7);
+    	init_grid(2<<9);
    	double L0 = 5.;
    	X0 = Y0 = Z0 = 0.;
 
@@ -54,13 +49,15 @@ int main() {
    	rotor_init(); 
 	
   	// Adaptivity
-  	minlevel = 3; 
-  	maxlevel = 9;
+  	minlevel = 4; 
+  	maxlevel = 10;
   	eps = 0.005;
 
   	foreach_dimension() {
    		periodic (right);
     	}
+
+	DT = 0.01;
 
     	run();
 }
@@ -73,22 +70,24 @@ event forcing(i = 1; i++) {
 }
 
 /* Rotate the rotor */
-event rotate(t = rot.rampT; t+=0.005 ) {
-	rotor_update(rot.theta + 0., rot.phi + M_PI/12000);
+event rotate(t = rot.rampT; t+=10 ) {
+	rot.theta += 0;
+	rot.phi += 0;
+	rotor_update();
 }
 
 
 /* Progress event */
-event end(t += 2; t <= 41) {
+event end(t += 2; t <= 11) {
 	printf("i = %d t = %g\n", i, t);
 }
 
 /* Adaptivity function called */
 event adapt(i++) {
-	adapt_wavelet((scalar *){u},(double []){eps,eps},maxlevel,minlevel);
+	adapt_wavelet((scalar *){u},(double []){eps,eps,eps},maxlevel,minlevel);
 }
 
-/* Visualisation */
+/* Visualisation */ 
 event movies(t += 0.1) {	
 
     	vertex scalar omega[]; 	// Vorticity
@@ -98,12 +97,12 @@ event movies(t += 0.1) {
 	foreach () {
 		omega[] = ((u.y[1,0] - u.y[-1,0]) - (u.x[0,1] - u.x[0,-1]))/(2*Delta); // Curl(u) 
 		lev[] = level;
-		ekin[] = Delta*(sq(u.x[]) + sq(u.y[]) + sq(u.z[]));
+		ekin[] = rho[]*Delta*(sq(u.x[]) + sq(u.y[]));
 	}
 
 	boundary ({lev, omega, ekin});
 
-	output_ppm (ekin, file = "ppm2mp4 ekin.mp4", n = 512, linear = true, min = -0.0001, max = 0.0001);
+	output_ppm (ekin, file = "ppm2mp4 ekin.mp4", n = 512);
 	output_ppm (u.x, file = "ppm2mp4 vel_x.mp4", n = 512, linear = true, min = -1, max = 1);
 	output_ppm (u.y, file = "ppm2mp4 vel_y.mp4", n = 512, linear = true, min = -1, max = 1);
 	output_ppm (omega, file = "ppm2mp4 vort.mp4", n = 512, linear = true); 
@@ -123,22 +122,20 @@ void rotor_init() {
     	rot.rampT = 1.;
 	rot.R = 0.01;     
 	rot.W = 0.001;                      
-    	rot.Prho = .5;
+    	rot.Prho = 1.;
     
-   	rot.x0 = rot.y0 = rot.z0 = L0/2.;
-
-	rot.x0 = L0/2.;
-	rot.y0 = L0/10.;
+   	rot.x0 = L0/2.;
+	rot.y0 = L0/2.;
 	rot.z0 = 0.;
 	
-	rotor_update(M_PI/2., 0);
+	rot.theta = M_PI/2.;	// Polar angle
+	rot.phi = 0.;		// Azimuthal angle 
+
+	rotor_update();
 }
 
 /* Updating relevant rotor vars */
-void rotor_update(double theta, double phi) {
-
-	rot.theta = theta; 	// Polar angle
-	rot.phi = phi;		// Azimuthal angle 
+void rotor_update() {
 
    	// Set normal vectors 
    	rot.nf.x = sin(rot.theta)*cos(rot.phi);

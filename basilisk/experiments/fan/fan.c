@@ -10,13 +10,11 @@ Declarations
 */
 
 /* Global variables */
-int minlevel, maxlevel;
-double eps;
-struct sRotor rot; 
-scalar fan[];
-scalar ekin[];		// Kin energy
-double Wdone;
-
+int minlevel, maxlevel; // Grid depths
+double eps;				// Error in u fields
+struct sRotor rot;  	// Rotor details structure 
+struct sDiag dia; 		// Diagnostics
+scalar fan[];			// Fan volume fraction 
 
 /* Functions */
 void rotor_init(); 
@@ -34,6 +32,14 @@ struct sRotor {
 	coord nf, nr;			// Normal vector fan, rotation 
 };
 
+struct sDiag {
+	double Ekin;			// Total kinetic energy
+	double EkinOld;			// Track changes in kin energy 
+	double Wdone;			// Track work done
+	double WdoneOld;		// Track changes in work done 
+	double rotArea 			// Track real rotor area
+}
+
 /*
 ============================================================================
 Main Code, Events
@@ -48,24 +54,31 @@ int main() {
    	L0 = 5.;
    	X0 = Y0 = Z0 = 0.;
 	
-	//u.x.refine = refine_linear;
-	//u.y.refine = refine_linear;
+	//# Such that momentum is better conserved 
+	u.x.refine = refine_linear; 
+	u.y.refine = refine_linear;
+	u.z.refine = refine_linear;
 
    	// Initialize physics 
    	rotor_init(); 
 	rotor_coord();
-	fan.prolongation = fraction_refine; // Tell basilisk it is a volume field
+	//# Tell basilisk it is a volume field
+	fan.prolongation = fraction_refine; 
 
   	// Adaptivity
   	minlevel = 4; 
   	maxlevel = 8;
   	eps = 0.005;
 
+	// Set boundary conditions
   	foreach_dimension() {
    		periodic (right);
     	}
 
+	// Limit maximum time step 
 	DT = 0.05;
+
+	// Run the simulation
     	run();
 }
 
@@ -73,16 +86,21 @@ int main() {
 event forcing(i = 1; i++) {
 	rotor_coord();
 	rotor_forcing();
-
 }
 
 /* Rotate the rotor */
 event rotate(t = rot.rampT; t+=10 ) {
+	// Change center  
+	rot.x0 += 0;
+	rot.y0 += 0;
+	rot.z0 += 0;
+
+	// Change angles 
 	rot.theta += 0;
 	rot.phi += 0;
+
 	rotor_update();
 }
-
 
 /* Progress event */
 event end(t += 2; t <= 11) {
@@ -92,28 +110,19 @@ event end(t += 2; t <= 11) {
 /* Adaptivity function called */
 event adapt(i++) {
 	adapt_wavelet((scalar *){fan, u},(double []){0.01,eps,eps,eps},maxlevel,minlevel);
-	//refine(fan[] > 0.01 && level < maxlevel-1);
 }
 
 /* Visualisation */ 
 event movies(t += 0.1) {	
-
     	vertex scalar omega[]; 	// Vorticity
 	scalar lev[];	 	// Grid depth
-	double Ekin = 0.;	
-	double area = 0.;
+	scalar ekin[]; 		// Kinetic energy
 
-	foreach(reduction(+:area) reduction(+:Ekin)) {
-
+	foreach() {
 		omega[] = ((u.y[1,0] - u.y[-1,0]) - (u.x[0,1] - u.x[0,-1]))/(2*Delta); // Curl(u) 
 		ekin[] = 0.5*rho[]*sq(Delta)*(sq(u.x[]) + sq(u.y[]));
 		lev[] = level;
-
-		area += sq(Delta)*fan[];
-		Ekin += ekin[];
 	}
-
-	printf("A=%g, Afan=%g, Ekin=%g, Wdone=%g, ratio=%g\n", rot.V, area, Ekin, Wdone, Wdone/Ekin);
 
 	boundary ({lev, omega, ekin});
 
@@ -124,6 +133,24 @@ event movies(t += 0.1) {
 	output_ppm (omega, file = "ppm2mp4 vort.mp4", n = 512, linear = true); 
 	output_ppm (lev, file = "pp2mp4 grid_depth.mp4", n = 512, min = minlevel, max = maxlevel);
 }
+
+/* Sanity checks */
+event sanity (t += 1){
+	scalar ekin[]; 		\\ Kinetic energy
+
+	foreach(reduction(+:dia.rotArea) reduction(+:dia.Ekin)) {
+		ekin[] = 0.5*rho[]*sq(Delta)*(sq(u.x[]) + sq(u.y[]));
+		rot.Ekin += ekin[];
+		dia.rotArea += sq(Delta)*fan[];
+	}
+
+	printf("A=%g, Afan=%g, Ekin=%g, Wdone=%g, ratio=%g\n", rot.V, dia.rotArea, dia.Ekin, dia.Wdone, Wdone/Ekin);
+	printf("Energy: Ek=%g, W=%g, Ek/W=%g, dEk/dW=%g", dia.Ekin, dia.Wdone, dia.Ekin/dia.Wdone, (dia.Ekin-dia.EkinOld)/(dia.Wdone-dia.WdoneOld))
+
+	dia.EkinOld = 1.*dia.Ekin;
+	dia.WdoneOld = 1.*dia.Wdone;
+}
+
 
 /*
 ============================================================================

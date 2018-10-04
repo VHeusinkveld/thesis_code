@@ -47,6 +47,9 @@ int main() {
     	init_grid(2<<7);
    	L0 = 5.;
    	X0 = Y0 = Z0 = 0.;
+	
+	//u.x.refine = refine_linear;
+	//u.y.refine = refine_linear;
 
    	// Initialize physics 
    	rotor_init(); 
@@ -55,7 +58,7 @@ int main() {
 
   	// Adaptivity
   	minlevel = 4; 
-  	maxlevel = 9;
+  	maxlevel = 8;
   	eps = 0.005;
 
   	foreach_dimension() {
@@ -88,8 +91,8 @@ event end(t += 2; t <= 11) {
 
 /* Adaptivity function called */
 event adapt(i++) {
-	adapt_wavelet((scalar *){u},(double []){eps,eps,eps},maxlevel,minlevel);
-	refine(fan[] > 0.01 && level < maxlevel-1);
+	adapt_wavelet((scalar *){fan, u},(double []){0.01,eps,eps,eps},maxlevel,minlevel);
+	//refine(fan[] > 0.01 && level < maxlevel-1);
 }
 
 /* Visualisation */ 

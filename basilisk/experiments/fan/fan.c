@@ -105,7 +105,7 @@ event rotate(t = rot.rampT; t+=10 ) {
 }
 
 /* Progress event */
-event end(t += 2; t <= 11) {
+event end(t += 2; t <= 31) {
 	printf("i = %d t = %g\n", i, t);
 }
 
@@ -118,18 +118,18 @@ event adapt(i++) {
 event movies(t += 0.1) {	
     	vertex scalar omega[]; 	// Vorticity
 	scalar lev[];	 	// Grid depth
-	scalar ekin[]; 		// Kinetic energy
+	scalar ekinRho[]; 		// Kinetic energy
 
 	foreach() {
 		omega[] = ((u.y[1,0] - u.y[-1,0]) - (u.x[0,1] - u.x[0,-1]))/(2*Delta); // Curl(u) 
-		ekin[] = 0.5*rho[]*sq(Delta)*(sq(u.x[]) + sq(u.y[]));
+		ekinRho[] = 0.5*rho[]*(sq(u.x[]) + sq(u.y[]));
 		lev[] = level;
 	}
 
-	boundary ({lev, omega, ekin});
+	boundary ({lev, omega, ekinRho});
 
 	output_ppm (fan, file = "ppm2mp4 coord_fan.mp4", n = 512, max = 1, min = 0);
-	output_ppm (ekin, file = "ppm2mp4 ekin.mp4", n = 512);
+	output_ppm (ekinRho, file = "ppm2mp4 ekin.mp4", n = 512);
 	output_ppm (u.x, file = "ppm2mp4 vel_x.mp4", n = 512, linear = true, min = -1, max = 1);
 	output_ppm (u.y, file = "ppm2mp4 vel_y.mp4", n = 512, linear = true, min = -1, max = 1);
 	output_ppm (omega, file = "ppm2mp4 vort.mp4", n = 512, linear = true); 

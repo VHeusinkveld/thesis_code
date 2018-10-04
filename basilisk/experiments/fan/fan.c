@@ -37,8 +37,8 @@ struct sDiag {
 	double EkinOld;			// Track changes in kin energy 
 	double Wdone;			// Track work done
 	double WdoneOld;		// Track changes in work done 
-	double rotArea 			// Track real rotor area
-}
+	double rotVol;			// Track real rotor volume
+};
 
 /*
 ============================================================================
@@ -57,7 +57,9 @@ int main() {
 	//# Such that momentum is better conserved 
 	u.x.refine = refine_linear; 
 	u.y.refine = refine_linear;
-	u.z.refine = refine_linear;
+	#if dimension > 2
+		u.z.refine = refine_linear;
+	#endif
 
    	// Initialize physics 
    	rotor_init(); 
@@ -67,7 +69,7 @@ int main() {
 
   	// Adaptivity
   	minlevel = 4; 
-  	maxlevel = 8;
+  	maxlevel = 9;
   	eps = 0.005;
 
 	// Set boundary conditions
@@ -136,16 +138,29 @@ event movies(t += 0.1) {
 
 /* Sanity checks */
 event sanity (t += 1){
-	scalar ekin[]; 		\\ Kinetic energy
+	
+	scalar ekin[]; 		// Kinetic energy
+	double tempVol = 0;
+	double tempEkin = 0;	
 
-	foreach(reduction(+:dia.rotArea) reduction(+:dia.Ekin)) {
+	foreach(reduction(+:tempVol) reduction(+:tempEkin)) {
 		ekin[] = 0.5*rho[]*sq(Delta)*(sq(u.x[]) + sq(u.y[]));
-		rot.Ekin += ekin[];
-		dia.rotArea += sq(Delta)*fan[];
+		tempEkin += ekin[];
+		#if dimension > 1			
+			tempVol += sq(Delta)*fan[];
+		#endif
+		#if dimension > 2
+			tempVol = cube(Delta)*fan[];
+		#endif
 	}
 
-	printf("A=%g, Afan=%g, Ekin=%g, Wdone=%g, ratio=%g\n", rot.V, dia.rotArea, dia.Ekin, dia.Wdone, Wdone/Ekin);
-	printf("Energy: Ek=%g, W=%g, Ek/W=%g, dEk/dW=%g", dia.Ekin, dia.Wdone, dia.Ekin/dia.Wdone, (dia.Ekin-dia.EkinOld)/(dia.Wdone-dia.WdoneOld))
+	dia.rotVol = 1.*tempVol;
+	dia.Ekin = 1.*tempEkin;
+
+	printf("V=%g, Vr=%g, ",rot.V, dia.rotVol);
+	printf("Energy: Ek=%g, W=%g, Ek/W=%g, dEk/dW=%g\n", 
+		dia.Ekin, dia.Wdone, dia.Ekin/dia.Wdone, 
+		(dia.Ekin-dia.EkinOld)/(dia.Wdone-dia.WdoneOld));
 
 	dia.EkinOld = 1.*dia.Ekin;
 	dia.WdoneOld = 1.*dia.Wdone;
@@ -244,7 +259,7 @@ void rotor_coord() {
 		}
 	}
 	
-	Wdone += tempW;
+	dia.Wdone += tempW;
 
 }
 

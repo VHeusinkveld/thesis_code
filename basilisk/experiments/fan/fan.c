@@ -192,14 +192,14 @@ void rotor_coord() {
 	double w, wsgn, damp, usgn, utemp;
 
 	foreach(reduction(+:tempW)) {		
-		if(fan[] > 0.01) {
+		if(fan[] > 0.) {
 			foreach_dimension() {
 
 			// Work in respective direction 
 			wsgn = sign(rot.nf.x*u.x[]) + (sign(rot.nf.x*u.x[]) == 0)*sign(rot.nf.x);
 			damp = rot.rampT > t ? t/rot.rampT : 1.;
 			w = wsgn*fan[]*damp*sq(rot.nf.x)*(2./rho[])*(rot.P/rot.V)*dt;
-			tempW += w;
+			tempW += 0.5*w*sq(Delta);
 
 			// New kinetic energy
 			utemp = sq(u.x[]) + w;

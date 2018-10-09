@@ -80,7 +80,7 @@ int main() {
   	// Adaptivity
   	minlevel = 4; 
   	maxlevel = 8;
-  	eps = 0.005;
+  	eps = 0.01;
 
 	// Set boundary conditions
 	periodic (left);
@@ -142,7 +142,7 @@ event end(t += 2; t <= 30) {
 
 /* Adaptivity function called */
 event adapt(i++) {
-	adapt_wavelet((scalar *){fan, u},(double []){0.01,eps,eps,eps},maxlevel,minlevel);
+	adapt_wavelet((scalar *){fan, u},(double []){0.0001,eps,eps,eps},maxlevel,minlevel);
 }
 
 /* Visualisation */ 

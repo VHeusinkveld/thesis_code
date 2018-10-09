@@ -1,6 +1,8 @@
 //#include "grid/octree.h" // For 3D
-#include "navier-stokes/centered.h"
 #include "utils.h" 
+#include "navier-stokes/centered.h"
+#include "tracer.h"
+#include "diffusion.h"
 #include "fractions.h"
 
 /*
@@ -14,7 +16,11 @@ int minlevel, maxlevel; // Grid depths
 double eps;				// Error in u fields
 struct sRotor rot;  	// Rotor details structure 
 struct sDiag dia; 		// Diagnostics
-scalar fan[];			// Fan volume fraction 
+scalar fan[];			// Fan volume fraction
+
+scalar b[];		// Buoyancy
+scalar * tracers = {b};
+face vector av[]; 
 
 /* Functions */
 void rotor_init(); 
@@ -48,7 +54,6 @@ Main Code, Events
 
 /* Initialisation */
 int main() {
-
     	// Grid variables 
     	init_grid(2<<7);
    	L0 = 5.;
@@ -65,23 +70,49 @@ int main() {
    	rotor_init(); 
 	rotor_coord();
 	//# Tell basilisk it is a volume field
-	fan.prolongation = fraction_refine; 
+	fan.prolongation = fraction_refine;
+	p.refine = p.prolongation = refine_linear;
+	b.gradient = minmod2; // Flux limiter 
+	const face vector muc[] = {1/10000, 1/10000};
+	mu = muc;
+	a = av; // Link acceleration
 
   	// Adaptivity
   	minlevel = 4; 
-  	maxlevel = 9;
+  	maxlevel = 8;
   	eps = 0.005;
 
 	// Set boundary conditions
-  	foreach_dimension() {
-   		periodic (right);
-    	}
+	periodic (left);
+    	
+	u.t[bottom] = dirichlet(0.);
+	b[bottom] = dirichlet(1.);
+	b[top] = neumann(1.);
 
 	// Limit maximum time step 
 	DT = 0.05;
 
 	// Run the simulation
     	run();
+}
+
+/* Initialisation */
+event init(t=0){
+	foreach() {
+		b[] = y + 0.001*noise();
+	}
+}
+
+/* Gravity forcing */
+event acceleration(i++){
+	foreach_face(y){
+		av.y[] = (b[] + b[0,-1])/2.;
+	}
+}
+
+/* Diffusion */
+event tracer_diffusion(i++){
+	diffusion(b, dt, mu);
 }
 
 /* Forcing by the rotor */
@@ -105,7 +136,7 @@ event rotate(t = rot.rampT; t+=10 ) {
 }
 
 /* Progress event */
-event end(t += 2; t <= 11) {
+event end(t += 2; t <= 30) {
 	printf("i = %d t = %g\n", i, t);
 }
 
@@ -128,6 +159,7 @@ event movies(t += 0.1) {
 
 	boundary ({lev, omega, ekinRho});
 
+	output_ppm (b, file = "ppm2mp4 buoyancy.mp4", n = 512);
 	output_ppm (fan, file = "ppm2mp4 coord_fan.mp4", n = 512, max = 1, min = 0);
 	output_ppm (ekinRho, file = "ppm2mp4 ekin.mp4", n = 512);
 	output_ppm (u.x, file = "ppm2mp4 vel_x.mp4", n = 512, linear = true, min = -1, max = 1);
@@ -178,16 +210,16 @@ void rotor_init() {
     
 	// Set variables 
     	rot.rampT = 1.;
-	rot.R = 0.25;     
-	rot.W = 0.1;                      
-    	rot.Prho = 0.1;
+	rot.R = 0.05;     
+	rot.W = 0.01;                      
+    	rot.Prho = 50.;
     
    	rot.x0 = L0/2.;
-	rot.y0 = L0/2.;
+	rot.y0 = 3*L0/4.;
 	rot.z0 = 0.;
 	
 	rot.theta = M_PI/2.;	// Polar angle
-	rot.phi = M_PI/4.;		// Azimuthal angle 
+	rot.phi = -M_PI/2.;		// Azimuthal angle 
 
 	rotor_update();
 }

@@ -105,7 +105,7 @@ event rotate(t = rot.rampT; t+=10 ) {
 }
 
 /* Progress event */
-event end(t += 2; t <= 31) {
+event end(t += 2; t <= 11) {
 	printf("i = %d t = %g\n", i, t);
 }
 
@@ -187,7 +187,7 @@ void rotor_init() {
 	rot.z0 = 0.;
 	
 	rot.theta = M_PI/2.;	// Polar angle
-	rot.phi = 0.;		// Azimuthal angle 
+	rot.phi = M_PI/4.;		// Azimuthal angle 
 
 	rotor_update();
 }

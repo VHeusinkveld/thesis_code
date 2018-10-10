@@ -8,11 +8,15 @@ Created on Wed Oct 10 12:43:15 2018
 import os
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation
+from matplotlib import animation
+
+# Set up formatting for the movie files
+Writer = animation.writers['ffmpeg']
+writer = Writer(fps=10, metadata=dict(artist='Me'), bitrate=1800)
 
 data_files = []
 
-data_dir = os.getcwd() + "\\data_new"
+data_dir = os.getcwd() + "\\data"
 for filename in os.listdir(data_dir):
     data_files.append(filename)
 #%%
@@ -26,7 +30,7 @@ def init():
 
 
 def update(i):
-    f = open(".\\data_new\\" +  data_files[i], "r")
+    f = open(".\\data\\" +  data_files[i], "r")
     y = []
     b = []
     
@@ -34,15 +38,14 @@ def update(i):
         y.append(line.split()[0])
         b.append(line.split()[1])
         
-    y = np.asarray(y[2:]).astype(np.float)
-    b = np.asarray(b[2:]).astype(np.float)
+    y = np.asarray(y[1:]).astype(np.float)
+    b = np.asarray(b[1:]).astype(np.float)
     ln.set_data(b, y)
-    
+
     f.close()
     return ln,
     
-ani = FuncAnimation(fig, update, init_func=init, 
-                    frames = len(data_files), 
-                    interval=100,
-                    blit=True)
-plt.show()
+ani = animation.FuncAnimation(fig, update, 
+                              init_func=init, 
+                              frames = len(data_files))
+ani.save('im.mp4', writer=writer)

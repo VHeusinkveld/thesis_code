@@ -57,7 +57,7 @@ Main Code, Events
 int main() {
     	// Grid variables 
     	init_grid(2<<7);
-   	L0 = 5.;
+   	L0 = 6.;
    	X0 = Y0 = Z0 = 0.;
 	
 	//# Such that momentum is better conserved 
@@ -70,7 +70,7 @@ int main() {
    	// Initialize physics 
    	rotor_init(); 
 	rotor_coord();
-	const face vector muc[] = {1/10000, 1/10000};
+	const face vector muc[] = {1./3000., 1./3000.};
 	mu = muc;
 	a = av; // Link acceleration
 
@@ -88,11 +88,12 @@ int main() {
 	periodic (left);
     	
 	u.t[bottom] = dirichlet(0.);
-	b[bottom] = dirichlet(1.);
+	b[bottom] = dirichlet(0.);
 	b[top] = neumann(1.);
 
 	// Limit maximum time step 
 	DT = 0.05;
+	CFL = 0.5;
 
 	// Run the simulation
     	run();
@@ -101,7 +102,7 @@ int main() {
 /* Initialisation */
 event init(t=0){
 	foreach() {
-		b[] = 9.81*(0.5*y + 273 - 273)/273 + 0.001*noise();
+		b[] = 9.81*(2*y + 273 - 273)/273 + 0.001*noise();
 	}
 }
 
@@ -112,9 +113,11 @@ event acceleration(i++){
 	}
 }
 
+mgstats mgb;
+
 /* Diffusion */
 event tracer_diffusion(i++){
-	diffusion(b, dt, mu);
+	mgb = diffusion(b, dt, mu);
 }
 
 /* Forcing by the rotor */
@@ -124,7 +127,7 @@ event forcing(i = 1; i++) {
 }
 
 /* Rotate the rotor */
-event rotate(t = rot.rampT; t+=10 ) {
+event rotate(t = rot.rampT; t+=20 ) {
 	// Change center  
 	rot.x0 += 0;
 	rot.y0 += 0;
@@ -143,7 +146,7 @@ event adapt(i++) {
 }
 
 /* Profiler */
-event profiler(t=0.1; t += 0.1) {
+event profiler(t += 1.) {
 	char name[0x100];
 	snprintf(name, sizeof(name), "./output/bout%05d", i);
 	profile({b}, name);
@@ -176,8 +179,8 @@ event movies(t += 0.1) {
 event sanity (t += 1){
 	
 	scalar ekin[]; 		// Kinetic energy
-	double tempVol = 0;
-	double tempEkin = 0;	
+	double tempVol = 0.;
+	double tempEkin = 0.;	
 
 	foreach(reduction(+:tempVol) reduction(+:tempEkin)) {
 		ekin[] = 0.5*rho[]*sq(Delta)*(sq(u.x[]) + sq(u.y[]));
@@ -203,8 +206,8 @@ event sanity (t += 1){
 }
 
 /* Progress event */
-event end(t += 2; t <= 30) {
-	printf("i = %d t = %g\n", i, t);
+event end(t+=2.; t <= 60.) {
+	printf("i=%d t=%g p=%d u=%d b=%d \n", i, t, mgp.i, mgu.i, mgb.i);
 }
 
 /*

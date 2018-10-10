@@ -41,10 +41,10 @@ struct sDiag {
 };
 
 /* Functions */
-void rotor_init(); 
-struct sRotor rotor_update(struct sRotor);
-void rotor_coord();
-void rotor_forcing();
+void sRotor rotor_init(struct sRotor*); 
+void sRotor rotor_update(struct sRotor*);
+void rotor_coord(struct sRotor*, scalar*);
+void rotor_forcing(scalar*, vector*, struct sDiag*, struct sRotor*);
 
 /*
 ============================================================================
@@ -67,12 +67,14 @@ int main() {
 	#endif
 
    	// Initialize physics 
-   	rotor_init(); 
-	rotor_coord();
+   	rotor_init(&rot); 
+	rotor_coord(&fan);
+
 	//# Tell basilisk it is a volume field
 	fan.prolongation = fraction_refine;
 	p.refine = p.prolongation = refine_linear;
 	b.gradient = minmod2; // Flux limiter 
+
 	const face vector muc[] = {1/10000, 1/10000};
 	mu = muc;
 	a = av; // Link acceleration
@@ -84,7 +86,6 @@ int main() {
 
 	// Set boundary conditions
 	periodic (left);
-    	
 	u.t[bottom] = dirichlet(0.);
 	b[bottom] = dirichlet(1.);
 	b[top] = neumann(1.);
@@ -117,8 +118,8 @@ event tracer_diffusion(i++){
 
 /* Forcing by the rotor */
 event forcing(i = 1; i++) {
-	rotor_coord();
-	rotor_forcing();
+	rotor_coord(&rot, &fan);
+	rotor_forcing(&fan, &u, &dia, &rot);
 }
 
 /* Rotate the rotor */
@@ -132,7 +133,7 @@ event rotate(t = rot.rampT; t+=10 ) {
 	rot.theta += 0;
 	rot.phi += 0;
 
-	rotor_update(rot);
+	rotor_update(&rot);
 }
 
 /* Progress event */
@@ -206,89 +207,89 @@ Functions
 */
 
 /* Function returning the sRotor structure */
-void rotor_init() {
+void rotor_init(struct sRotor* s) {
     
 	// Set variables 
-    	rot.rampT = 1.;
-	rot.R = 0.05;     
-	rot.W = 0.01;                      
-    	rot.Prho = 5.;
+    	s.rampT = 1.;
+	s.R = 0.05;     
+	s.W = 0.01;                      
+    	s.Prho = 5.;
     
-   	rot.x0 = L0/2.;
-	rot.y0 = 3*L0/4.;
-	rot.z0 = 0.;
+   	s.x0 = L0/2.;
+	s.y0 = 3*L0/4.;
+	s.z0 = 0.;
 	
-	rot.theta = M_PI/2.;	// Polar angle
-	rot.phi = -M_PI/2.;		// Azimuthal angle 
+	s.theta = M_PI/2.;	// Polar angle
+	s.phi = -M_PI/2.;		// Azimuthal angle 
 
-	rot = rotor_update(rot);
+	s = rotor_update(s);
 }
 
 /* Updating relevant rotor vars */
-struct sRotor rotor_update(struct sRotor rot) {
+void rotor_update(struct sRotor* s) {
 
    	// Set normal vectors 
-   	rot.nf.x = sin(rot.theta)*cos(rot.phi);
-	rot.nf.y = sin(rot.theta)*sin(rot.phi);
-	rot.nf.z = cos(rot.theta);
+   	s.nf.x = sin(s.theta)*cos(s.phi);
+	s.nf.y = sin(s.theta)*sin(s.phi);
+	s.nf.z = cos(s.theta);
 
-	rot.nr.x = sin(rot.theta)*cos(rot.phi);
-    	rot.nr.y = sin(rot.theta)*sin(rot.phi);
-    	rot.nr.z = cos(rot.theta);
+	s.nr.x = sin(s.theta)*cos(s.phi);
+    	s.nr.y = sin(s.theta)*sin(s.phi);
+    	s.nr.z = cos(s.theta);
 
     	// Calculate consequences
 	#if dimension > 1	
-		rot.A = 2*rot.R;
+		s.A = 2*s.R;
 	#endif
 	#if dimension > 2    	
-		rot.A = sq(rot.R)*M_PI;      
+		s.A = sq(s.R)*M_PI;      
 	#endif
                
-	rot.V = rot.A*rot.W;
-	rot.P = rot.V*rot.Prho;
-
-	return rot;
+	s.V = s.A*s.W;
+	s.P = s.V*s.Prho;
 }
 
 
 /* Function returning the volume fractions of a fan object */
-void rotor_coord() {
+void rotor_coord(struct sRotor* s, scalar* obj) {
 
       	scalar sph[], plnu[], plnd[];
 
-    	fraction(sph, -sq((x - rot.x0)) - sq((y - rot.y0)) - sq((z - rot.z0)) + sq(rot.R));
-    	fraction(plnu,  rot.nr.x*(x - rot.x0) + rot.nr.y*(y - rot.y0) + rot.nr.z*(z - rot.z0) + rot.W/2.);
-    	fraction(plnd, -rot.nr.x*(x - rot.x0) - rot.nr.y*(y - rot.y0) - rot.nr.z*(z - rot.z0) + rot.W/2.);	
+    	fraction(sph, -sq((x - s.x0)) - sq((y - s.y0)) - sq((z - s.z0)) + sq(s.R));
+    	fraction(plnu,  s.nr.x*(x - s.x0) + s.nr.y*(y - s.y0) + s.nr.z*(z - s.z0) + s.W/2.);
+    	fraction(plnd, -s.nr.x*(x - s.x0) - s.nr.y*(y - s.y0) - s.nr.z*(z - s.z0) + s.W/2.);	
 
 	foreach () {
-    		fan[] = sph[] * plnu[] * plnd[];
+    		obj[] = sph[] * plnu[] * plnd[];
    	}
-	boundary({fan});
+	boundary({obj});
+
+	void
 }
 
- void rotor_forcing(){
+ void rotor_forcing(scalar* obj, vector* uu, struct sDiag* dia, struct sRotor* s){
 	double tempW = 0.;
 	double w, wsgn, damp, usgn, utemp;
 
 	foreach(reduction(+:tempW)) {		
-		if(fan[] > 0.) {
+		if(obj[] > 0.) {
 			foreach_dimension() {
 
 			// Work in respective direction 
-			wsgn = sign(rot.nf.x*u.x[]) + (sign(rot.nf.x*u.x[]) == 0)*sign(rot.nf.x);
-			damp = rot.rampT > t ? t/rot.rampT : 1.;
-			w = wsgn*fan[]*damp*sq(rot.nf.x)*(2./rho[])*(rot.P/rot.V)*dt;
+			wsgn = sign(s.nf.x*uu.x[]) + (sign(s.nf.x*uu.x[]) == 0)*sign(s.nf.x);
+			damp = s.rampT > t ? t/s.rampT : 1.;
+			w = wsgn*obj[]*damp*sq(s.nf.x)*(2./rho[])*(s.P/s.V)*dt;
 			tempW += 0.5*w*sq(Delta);
 
 			// New kinetic energy
-			utemp = sq(u.x[]) + w;
+			utemp = sq(uu.x[]) + w;
 
-			usgn = 1.*(u.x[] >= 0)*(utemp > 0) +
-			    	     -1.*(u.x[] >= 0)*(utemp < 0) +
-		 		      1.*(u.x[] <  0)*(utemp < 0) +
-				     -1.*(u.x[] <  0)*(utemp > 0); 
+			usgn = 1.*(uu.x[] >= 0)*(utemp > 0) +
+			    	     -1.*(uu.x[] >= 0)*(utemp < 0) +
+		 		      1.*(uu.x[] <  0)*(utemp < 0) +
+				     -1.*(uu.x[] <  0)*(utemp > 0); 
 
-			u.x[] = usgn*sqrt(fabs(utemp));
+			uu.x[] = usgn*sqrt(fabs(utemp));
 		}
 		}
 	}

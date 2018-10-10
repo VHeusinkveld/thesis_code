@@ -12,7 +12,7 @@ from matplotlib import animation
 
 # Set up formatting for the movie files
 Writer = animation.writers['ffmpeg']
-writer = Writer(fps=10, metadata=dict(artist='Me'), bitrate=1800)
+writer = Writer(fps=1, metadata=dict(artist='Me'), bitrate=1800)
 
 data_files = []
 
@@ -21,7 +21,7 @@ for filename in os.listdir(data_dir):
     data_files.append(filename)
 #%%
 fig = plt.figure()
-ax = plt.axes(xlim=(0,0.1), ylim=(0,5))
+ax = plt.axes(xlim=(0,0.6), ylim=(0,6))
 ln, = ax.plot([],[])
 
 def init():

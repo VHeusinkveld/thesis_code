@@ -22,12 +22,6 @@ scalar b[];		// Buoyancy
 scalar * tracers = {b};
 face vector av[]; 
 
-/* Functions */
-void rotor_init(); 
-void rotor_update();
-void rotor_coord();
-void rotor_forcing();
-
 /* Structures */
 struct sRotor {	
 	double rampT;			// Time to start up rotor
@@ -45,6 +39,12 @@ struct sDiag {
 	double WdoneOld;		// Track changes in work done 
 	double rotVol;			// Track real rotor volume
 };
+
+/* Functions */
+void rotor_init(); 
+struct sRotor rotor_update(struct sRotor);
+void rotor_coord();
+void rotor_forcing();
 
 /*
 ============================================================================
@@ -99,7 +99,7 @@ int main() {
 /* Initialisation */
 event init(t=0){
 	foreach() {
-		b[] = y + 0.001*noise();
+		b[] = 9.81*(0.5*y + 273 - 273)/273 + 0.001*noise();
 	}
 }
 
@@ -132,7 +132,7 @@ event rotate(t = rot.rampT; t+=10 ) {
 	rot.theta += 0;
 	rot.phi += 0;
 
-	rotor_update();
+	rotor_update(rot);
 }
 
 /* Progress event */
@@ -212,7 +212,7 @@ void rotor_init() {
     	rot.rampT = 1.;
 	rot.R = 0.05;     
 	rot.W = 0.01;                      
-    	rot.Prho = 50.;
+    	rot.Prho = 5.;
     
    	rot.x0 = L0/2.;
 	rot.y0 = 3*L0/4.;
@@ -221,11 +221,11 @@ void rotor_init() {
 	rot.theta = M_PI/2.;	// Polar angle
 	rot.phi = -M_PI/2.;		// Azimuthal angle 
 
-	rotor_update();
+	rot = rotor_update(rot);
 }
 
 /* Updating relevant rotor vars */
-void rotor_update() {
+struct sRotor rotor_update(struct sRotor rot) {
 
    	// Set normal vectors 
    	rot.nf.x = sin(rot.theta)*cos(rot.phi);
@@ -246,6 +246,8 @@ void rotor_update() {
                
 	rot.V = rot.A*rot.W;
 	rot.P = rot.V*rot.Prho;
+
+	return rot;
 }
 
 

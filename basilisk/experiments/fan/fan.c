@@ -222,42 +222,42 @@ void rotor_init(struct sRotor* sR) {
 	sR.theta = M_PI/2.;	// Polar angle
 	sR.phi = -M_PI/2.;		// Azimuthal angle 
 
-	sR = rotor_update(s);
+	sR = rotor_update(sR);
 }
 
 /* Updating relevant rotor vars */
-void rotor_update(struct sRotor* s) {
+void rotor_update(struct sRotor* sR) {
 
    	// Set normal vectors 
-   	s.nf.x = sin(s.theta)*cos(s.phi);
-	s.nf.y = sin(s.theta)*sin(s.phi);
-	s.nf.z = cos(s.theta);
+   	sR.nf.x = sin(sR.theta)*cos(sR.phi);
+	sR.nf.y = sin(sR.theta)*sin(sR.phi);
+	sR.nf.z = cos(sR.theta);
 
-	s.nr.x = sin(s.theta)*cos(s.phi);
-    	s.nr.y = sin(s.theta)*sin(s.phi);
-    	s.nr.z = cos(s.theta);
+	sR.nr.x = sin(sR.theta)*cos(sR.phi);
+    	sR.nr.y = sin(sR.theta)*sin(sR.phi);
+    	sR.nr.z = cos(sR.theta);
 
     	// Calculate consequences
 	#if dimension > 1	
-		s.A = 2*s.R;
+		sR.A = 2*sR.R;
 	#endif
 	#if dimension > 2    	
-		s.A = sq(s.R)*M_PI;      
+		sR.A = sq(sR.R)*M_PI;      
 	#endif
                
-	s.V = s.A*s.W;
-	s.P = s.V*s.Prho;
+	sR.V = sR.A*sR.W;
+	sR.P = sR.V*sR.Prho;
 }
 
 
 /* Function returning the volume fractions of a fan object */
-void rotor_coord(struct sRotor* s, scalar* obj) {
+void rotor_coord(struct sRotor* sR, scalar* obj) {
 
       	scalar sph[], plnu[], plnd[];
 
-    	fraction(sph, -sq((x - s.x0)) - sq((y - s.y0)) - sq((z - s.z0)) + sq(s.R));
-    	fraction(plnu,  s.nr.x*(x - s.x0) + s.nr.y*(y - s.y0) + s.nr.z*(z - s.z0) + s.W/2.);
-    	fraction(plnd, -s.nr.x*(x - s.x0) - s.nr.y*(y - s.y0) - s.nr.z*(z - s.z0) + s.W/2.);	
+    	fraction(sph, -sq((x - sR.x0)) - sq((y - sR.y0)) - sq((z - sR.z0)) + sq(sR.R));
+    	fraction(plnu,  sR.nr.x*(x - sR.x0) + sR.nr.y*(y - sR.y0) + sR.nr.z*(z - sR.z0) + sR.W/2.);
+    	fraction(plnd, -sR.nr.x*(x - sR.x0) - sR.nr.y*(y - sR.y0) - sR.nr.z*(z - sR.z0) + sR.W/2.);	
 
 	foreach () {
     		obj[] = sph[] * plnu[] * plnd[];
@@ -267,7 +267,7 @@ void rotor_coord(struct sRotor* s, scalar* obj) {
 	void
 }
 
- void rotor_forcing(scalar* obj, vector* uu, struct sDiag* dia, struct sRotor* s){
+ void rotor_forcing(scalar* obj, vector* uu, struct sDiag* dia, struct sRotor* sR){
 	double tempW = 0.;
 	double w, wsgn, damp, usgn, utemp;
 
@@ -276,9 +276,9 @@ void rotor_coord(struct sRotor* s, scalar* obj) {
 			foreach_dimension() {
 
 			// Work in respective direction 
-			wsgn = sign(s.nf.x*uu.x[]) + (sign(s.nf.x*uu.x[]) == 0)*sign(s.nf.x);
-			damp = s.rampT > t ? t/s.rampT : 1.;
-			w = wsgn*obj[]*damp*sq(s.nf.x)*(2./rho[])*(s.P/s.V)*dt;
+			wsgn = sign(sR.nf.x*uu.x[]) + (sign(sR.nf.x*uu.x[]) == 0)*sign(sR.nf.x);
+			damp = sR.rampT > t ? t/sR.rampT : 1.;
+			w = wsgn*obj[]*damp*sq(sR.nf.x)*(2./rho[])*(sR.P/sR.V)*dt;
 			tempW += 0.5*w*sq(Delta);
 
 			// New kinetic energy

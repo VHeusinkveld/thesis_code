@@ -143,7 +143,7 @@ event adapt(i++) {
 }
 
 /* Profiler */
-event profiler(t += 0.1) {
+event profiler(t=0.1; t += 0.05) {
 	char name[0x100];
 	snprintf(name, sizeof(name), "./output/bout%g", t);
 	profile({b}, name);
@@ -203,7 +203,7 @@ event sanity (t += 1){
 }
 
 /* Progress event */
-event end(t += 2; t <= 10) {
+event end(t += 2; t <= 30) {
 	printf("i = %d t = %g\n", i, t);
 }
 
@@ -218,8 +218,8 @@ void rotor_init() {
     
 	// Set variables 
     	rot.rampT = 1.;
-	rot.R = 0.05;     
-	rot.W = 0.01;                      
+	rot.R = 0.1;     
+	rot.W = 0.05;                      
     	rot.Prho = 5.;
     
    	rot.x0 = L0/2.;

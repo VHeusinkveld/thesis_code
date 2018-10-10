@@ -4,6 +4,7 @@
 #include "tracer.h"
 #include "diffusion.h"
 #include "fractions.h"
+#include "profile5b.h"
 
 /*
 ============================================================================
@@ -42,7 +43,7 @@ struct sDiag {
 
 /* Functions */
 void rotor_init(); 
-struct sRotor rotor_update(struct sRotor);
+void rotor_update();
 void rotor_coord();
 void rotor_forcing();
 
@@ -69,13 +70,14 @@ int main() {
    	// Initialize physics 
    	rotor_init(); 
 	rotor_coord();
-	//# Tell basilisk it is a volume field
-	fan.prolongation = fraction_refine;
-	p.refine = p.prolongation = refine_linear;
-	b.gradient = minmod2; // Flux limiter 
 	const face vector muc[] = {1/10000, 1/10000};
 	mu = muc;
 	a = av; // Link acceleration
+
+	// Tell basilisk it is a volume field
+	fan.prolongation = fraction_refine;
+	p.refine = p.prolongation = refine_linear;
+	b.gradient = minmod2; // Flux limiter 
 
   	// Adaptivity
   	minlevel = 4; 
@@ -132,17 +134,19 @@ event rotate(t = rot.rampT; t+=10 ) {
 	rot.theta += 0;
 	rot.phi += 0;
 
-	rotor_update(rot);
-}
-
-/* Progress event */
-event end(t += 2; t <= 30) {
-	printf("i = %d t = %g\n", i, t);
+	rotor_update();
 }
 
 /* Adaptivity function called */
 event adapt(i++) {
 	adapt_wavelet((scalar *){fan, u},(double []){0.0001,eps,eps,eps},maxlevel,minlevel);
+}
+
+/* Profiler */
+event profiler(t += 0.1) {
+	char name[0x100];
+	snprintf(name, sizeof(name), "./output/bout%g", t);
+	profile({b}, name);
 }
 
 /* Visualisation */ 
@@ -198,6 +202,10 @@ event sanity (t += 1){
 	dia.WdoneOld = 1.*dia.Wdone;
 }
 
+/* Progress event */
+event end(t += 2; t <= 10) {
+	printf("i = %d t = %g\n", i, t);
+}
 
 /*
 ============================================================================
@@ -221,11 +229,11 @@ void rotor_init() {
 	rot.theta = M_PI/2.;	// Polar angle
 	rot.phi = -M_PI/2.;		// Azimuthal angle 
 
-	rot = rotor_update(rot);
+	rotor_update();
 }
 
 /* Updating relevant rotor vars */
-struct sRotor rotor_update(struct sRotor rot) {
+void rotor_update() {
 
    	// Set normal vectors 
    	rot.nf.x = sin(rot.theta)*cos(rot.phi);
@@ -246,8 +254,6 @@ struct sRotor rotor_update(struct sRotor rot) {
                
 	rot.V = rot.A*rot.W;
 	rot.P = rot.V*rot.Prho;
-
-	return rot;
 }
 
 

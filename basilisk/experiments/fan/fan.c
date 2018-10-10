@@ -143,9 +143,9 @@ event adapt(i++) {
 }
 
 /* Profiler */
-event profiler(t=0.1; t += 0.05) {
+event profiler(t=0.1; t += 0.1) {
 	char name[0x100];
-	snprintf(name, sizeof(name), "./output/bout%06g", t);
+	snprintf(name, sizeof(name), "./output/bout%05d", i);
 	profile({b}, name);
 }
 

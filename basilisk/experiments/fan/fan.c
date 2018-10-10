@@ -41,8 +41,8 @@ struct sDiag {
 };
 
 /* Functions */
-void sRotor rotor_init(struct sRotor*); 
-void sRotor rotor_update(struct sRotor*);
+void rotor_init(struct sRotor*); 
+void rotor_update(struct sRotor*);
 void rotor_coord(struct sRotor*, scalar*);
 void rotor_forcing(scalar*, vector*, struct sDiag*, struct sRotor*);
 
@@ -68,7 +68,7 @@ int main() {
 
    	// Initialize physics 
    	rotor_init(&rot); 
-	rotor_coord(&fan);
+	rotor_coord(&rot, &fan);
 
 	//# Tell basilisk it is a volume field
 	fan.prolongation = fraction_refine;
@@ -207,22 +207,22 @@ Functions
 */
 
 /* Function returning the sRotor structure */
-void rotor_init(struct sRotor* s) {
+void rotor_init(struct sRotor* sR) {
     
 	// Set variables 
-    	s.rampT = 1.;
-	s.R = 0.05;     
-	s.W = 0.01;                      
-    	s.Prho = 5.;
+    	sR.rampT = 1.;
+	sR.R = 0.05;     
+	sR.W = 0.01;                      
+    	sR.Prho = 5.;
     
-   	s.x0 = L0/2.;
-	s.y0 = 3*L0/4.;
-	s.z0 = 0.;
+   	sR.x0 = L0/2.;
+	sR.y0 = 3*L0/4.;
+	sR.z0 = 0.;
 	
-	s.theta = M_PI/2.;	// Polar angle
-	s.phi = -M_PI/2.;		// Azimuthal angle 
+	sR.theta = M_PI/2.;	// Polar angle
+	sR.phi = -M_PI/2.;		// Azimuthal angle 
 
-	s = rotor_update(s);
+	sR = rotor_update(s);
 }
 
 /* Updating relevant rotor vars */

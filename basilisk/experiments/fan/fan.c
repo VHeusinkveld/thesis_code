@@ -17,6 +17,7 @@ int minlevel, maxlevel; // Grid depths
 double eps;				// Error in u fields
 struct sRotor rot;  	// Rotor details structure 
 struct sDiag dia; 		// Diagnostics
+struct sKar kar;
 scalar fan[];			// Fan volume fraction
 
 scalar b[];		// Buoyancy
@@ -41,6 +42,12 @@ struct sDiag {
 	double rotVol;			// Track real rotor volume
 };
 
+struct sKar {
+	double sL;
+	double sV;
+	double sT;	
+};
+
 /* Functions */
 void rotor_init(); 
 void rotor_update();
@@ -55,9 +62,10 @@ Main Code, Events
 
 /* Initialisation */
 int main() {
+	
     	// Grid variables 
     	init_grid(2<<7);
-   	L0 = 6.;
+   	L0 = 3.;
    	X0 = Y0 = Z0 = 0.;
 	
 	//# Such that momentum is better conserved 
@@ -70,9 +78,10 @@ int main() {
    	// Initialize physics 
    	rotor_init(); 
 	rotor_coord();
-	const face vector muc[] = {0.*1./3000., 0.*1./3000.};
+	const face vector muc[] = {0.*1./2000., 0.*1./2000.};
 	mu = muc;
 	a = av; // Link acceleration
+	kar.sV = pow(4*rot.Prho*rot.W,1./3.);
 
 	// Tell basilisk it is a volume field
 	fan.prolongation = fraction_refine;
@@ -102,16 +111,16 @@ int main() {
 /* Initialisation */
 event init(t=0){
 	foreach() {
-		b[] = 9.81*(2*y + 273 - 273)/273 + 0.001*noise();
+		b[] = y + 0.001*noise();
 	}
 }
 
-/* Gravity forcing 
+/* Gravity forcing */
 event acceleration(i++){
 	foreach_face(y){
 		av.y[] = (b[] + b[0,-1])/2.;
 	}
-} */
+} 
 
 mgstats mgb;
 
@@ -127,7 +136,7 @@ event forcing(i = 1; i++) {
 }
 
 /* Rotate the rotor */
-event rotate(t = rot.rampT; t+=20 ) {
+event rotate(t = rot.rampT) {
 	// Change center  
 	rot.x0 += 0;
 	rot.y0 += 0;
@@ -145,34 +154,44 @@ event adapt(i++) {
 	adapt_wavelet((scalar *){fan, u},(double []){0.,eps,eps,eps},maxlevel,minlevel);
 }
 
-/* Profiler */
+/* Profiler 
 event profiler(t += 1.) {
 	char name[0x100];
 	snprintf(name, sizeof(name), "./output/bout%05d", i);
 	profile({b}, name);
-}
+} */
 
 /* Visualisation */ 
 event movies(t += 0.1) {	
     	vertex scalar omega[]; 	// Vorticity
 	scalar lev[];	 	// Grid depth
 	scalar ekinRho[]; 		// Kinetic energy
-
-	foreach() {
+  	vector db[];
+  	scalar m[];
+  
+	boundary({b});
+ 	gradients ({b}, {db});
+        foreach() {
+		m[] = 0;
+		foreach_dimension() {
+     	 		m[] += sq(db.x[]);
+		}
+    		if (m[] > 0) {
+      			m[] = log(sqrt(m[])+1.);
+		}
+ 
 		omega[] = ((u.y[1,0] - u.y[-1,0]) - (u.x[0,1] - u.x[0,-1]))/(2*Delta); // Curl(u) 
 		ekinRho[] = 0.5*rho[]*(sq(u.x[]) + sq(u.y[]));
 		lev[] = level;
 	}
 
-	boundary ({lev, omega, ekinRho});
-
-	output_ppm (b, file = "ppm2mp4 buoyancy.mp4", n = 512);
-	output_ppm (fan, file = "ppm2mp4 coord_fan.mp4", n = 512, max = 1, min = 0);
-	output_ppm (ekinRho, file = "ppm2mp4 ekin.mp4", n = 512);
-	output_ppm (u.x, file = "ppm2mp4 vel_x.mp4", n = 512, linear = true, min = -2.15, max = 2.15);
-	output_ppm (u.y, file = "ppm2mp4 vel_y.mp4", n = 512, linear = true, min = -2.15, max = 2.15);
-	output_ppm (omega, file = "ppm2mp4 vort.mp4", n = 512, linear = true); 
-	output_ppm (lev, file = "pp2mp4 grid_depth.mp4", n = 512, min = minlevel, max = maxlevel);
+	boundary ({m, lev, omega, ekinRho});
+	output_ppm (m, file = "mfield.mp4", n = 1<<maxlevel, min = 0, max = 1, linear = true);
+	output_ppm (b, file = "buoyancy.mp4", n = 1<<maxlevel, linear = true);
+	output_ppm (fan, file = "coord_fan.mp4", n = 1<<maxlevel, max = 1, min = 0);
+	output_ppm (ekinRho, file = "ekin.mp4", n = 1<<maxlevel, min = 0, max = 0.5*sq(kar.sV));
+	output_ppm (omega, file = "vort.mp4", n = 1<<maxlevel, linear = true); 
+	output_ppm (lev, file = "grid_depth.mp4", n = 1<<maxlevel, min = minlevel, max = maxlevel);
 }
 
 /* Sanity checks */
@@ -181,9 +200,8 @@ event sanity (t += 1){
 	scalar ekin[]; 		// Kinetic energy
 	double tempVol = 0.;
 	double tempEkin = 0.;	
-	double Vmax = 0., Vexp = 0.;
 
-	foreach(reduction(+:tempVol) reduction(+:tempEkin) reduction(max:Vmax)) {
+	foreach(reduction(+:tempVol) reduction(+:tempEkin)) {
 		ekin[] = 0.5*rho[]*sq(Delta)*(sq(u.x[]) + sq(u.y[]));
 		tempEkin += ekin[];
 		#if dimension > 1			
@@ -192,20 +210,13 @@ event sanity (t += 1){
 		#if dimension > 2
 			tempVol = cube(Delta)*fan[];
 		#endif
-
-		if(fan[]>0.) {	
-			Vmax = max(Vmax, sqrt(sq(u.x[])+sq(u.y[])));
-		}
-
 	}
 
 	dia.rotVol = 1.*tempVol;
 	dia.Ekin = 1.*tempEkin;
+
 	
-	Vexp = pow(4*rot.Prho*rot.W,1./3.);
-	printf("Vexp=%g, Vmax=%g\n",Vexp, Vmax);
-	
-	printf("V=%g, Vr=%g, ",rot.V, dia.rotVol);
+	//printf("V=%g, Vr=%g, ",rot.V, dia.rotVol);
 	printf("Energy: Ek=%g, W=%g, Ek/W=%g, dEk/dW=%g\n", 
 		dia.Ekin, dia.Wdone, dia.Ekin/dia.Wdone, 
 		(dia.Ekin-dia.EkinOld)/(dia.Wdone-dia.WdoneOld));
@@ -233,9 +244,9 @@ void rotor_init() {
     
 	// Set variables 
     	rot.rampT = 1.;
-	rot.R = 0.4;     
-	rot.W = 0.5;                      
-    	rot.Prho = 5.;
+	rot.R = L0/30.;     
+	rot.W = rot.R/5.;                      
+    	rot.Prho = 10.;
     
    	rot.x0 = L0/2.;
 	rot.y0 = 3*L0/4.;

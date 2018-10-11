@@ -70,7 +70,7 @@ int main() {
    	// Initialize physics 
    	rotor_init(); 
 	rotor_coord();
-	const face vector muc[] = {1./3000., 1./3000.};
+	const face vector muc[] = {0.*1./3000., 0.*1./3000.};
 	mu = muc;
 	a = av; // Link acceleration
 
@@ -106,12 +106,12 @@ event init(t=0){
 	}
 }
 
-/* Gravity forcing */
+/* Gravity forcing 
 event acceleration(i++){
 	foreach_face(y){
 		av.y[] = (b[] + b[0,-1])/2.;
 	}
-}
+} */
 
 mgstats mgb;
 
@@ -142,7 +142,7 @@ event rotate(t = rot.rampT; t+=20 ) {
 
 /* Adaptivity function called */
 event adapt(i++) {
-	adapt_wavelet((scalar *){fan, u},(double []){0.0001,eps,eps,eps},maxlevel,minlevel);
+	adapt_wavelet((scalar *){fan, u},(double []){0.,eps,eps,eps},maxlevel,minlevel);
 }
 
 /* Profiler */
@@ -169,8 +169,8 @@ event movies(t += 0.1) {
 	output_ppm (b, file = "ppm2mp4 buoyancy.mp4", n = 512);
 	output_ppm (fan, file = "ppm2mp4 coord_fan.mp4", n = 512, max = 1, min = 0);
 	output_ppm (ekinRho, file = "ppm2mp4 ekin.mp4", n = 512);
-	output_ppm (u.x, file = "ppm2mp4 vel_x.mp4", n = 512, linear = true, min = -1, max = 1);
-	output_ppm (u.y, file = "ppm2mp4 vel_y.mp4", n = 512, linear = true, min = -1, max = 1);
+	output_ppm (u.x, file = "ppm2mp4 vel_x.mp4", n = 512, linear = true, min = -2.15, max = 2.15);
+	output_ppm (u.y, file = "ppm2mp4 vel_y.mp4", n = 512, linear = true, min = -2.15, max = 2.15);
 	output_ppm (omega, file = "ppm2mp4 vort.mp4", n = 512, linear = true); 
 	output_ppm (lev, file = "pp2mp4 grid_depth.mp4", n = 512, min = minlevel, max = maxlevel);
 }
@@ -181,8 +181,9 @@ event sanity (t += 1){
 	scalar ekin[]; 		// Kinetic energy
 	double tempVol = 0.;
 	double tempEkin = 0.;	
+	double Vmax = 0., Vexp = 0.;
 
-	foreach(reduction(+:tempVol) reduction(+:tempEkin)) {
+	foreach(reduction(+:tempVol) reduction(+:tempEkin) reduction(max:Vmax)) {
 		ekin[] = 0.5*rho[]*sq(Delta)*(sq(u.x[]) + sq(u.y[]));
 		tempEkin += ekin[];
 		#if dimension > 1			
@@ -191,22 +192,33 @@ event sanity (t += 1){
 		#if dimension > 2
 			tempVol = cube(Delta)*fan[];
 		#endif
+
+		if(fan[]>0.) {	
+			Vmax = max(Vmax, sqrt(sq(u.x[])+sq(u.y[])));
+		}
+
 	}
 
 	dia.rotVol = 1.*tempVol;
 	dia.Ekin = 1.*tempEkin;
-
+	
+	Vexp = pow(4*rot.Prho*rot.W,1./3.);
+	printf("Vexp=%g, Vmax=%g\n",Vexp, Vmax);
+	
 	printf("V=%g, Vr=%g, ",rot.V, dia.rotVol);
 	printf("Energy: Ek=%g, W=%g, Ek/W=%g, dEk/dW=%g\n", 
 		dia.Ekin, dia.Wdone, dia.Ekin/dia.Wdone, 
 		(dia.Ekin-dia.EkinOld)/(dia.Wdone-dia.WdoneOld));
 
+
+	
+	
 	dia.EkinOld = 1.*dia.Ekin;
 	dia.WdoneOld = 1.*dia.Wdone;
 }
 
 /* Progress event */
-event end(t+=2.; t <= 60.) {
+event end(t+=2.; t <= 10.) {
 	printf("i=%d t=%g p=%d u=%d b=%d \n", i, t, mgp.i, mgu.i, mgb.i);
 }
 
@@ -221,8 +233,8 @@ void rotor_init() {
     
 	// Set variables 
     	rot.rampT = 1.;
-	rot.R = 0.1;     
-	rot.W = 0.05;                      
+	rot.R = 0.4;     
+	rot.W = 0.5;                      
     	rot.Prho = 5.;
     
    	rot.x0 = L0/2.;
@@ -230,7 +242,7 @@ void rotor_init() {
 	rot.z0 = 0.;
 	
 	rot.theta = M_PI/2.;	// Polar angle
-	rot.phi = -M_PI/2.;		// Azimuthal angle 
+	rot.phi = -M_PI/2.;	// Azimuthal angle 
 
 	rotor_update();
 }

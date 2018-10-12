@@ -65,7 +65,7 @@ int main() {
 	
     	// Grid variables 
     	init_grid(2<<7);
-   	L0 = 3.;
+   	L0 = 50.;
    	X0 = Y0 = Z0 = 0.;
 	
 	//# Such that momentum is better conserved 
@@ -78,7 +78,7 @@ int main() {
    	// Initialize physics 
    	rotor_init(); 
 	rotor_coord();
-	const face vector muc[] = {0.*1./2000., 0.*1./2000.};
+	const face vector muc[] = {1./3000., 1./3000.};
 	mu = muc;
 	a = av; // Link acceleration
 	kar.sV = pow(4*rot.Prho*rot.W,1./3.);
@@ -91,7 +91,7 @@ int main() {
   	// Adaptivity
   	minlevel = 4; 
   	maxlevel = 8;
-  	eps = 0.01;
+  	eps = 0.05;
 
 	// Set boundary conditions
 	periodic (left);
@@ -111,7 +111,7 @@ int main() {
 /* Initialisation */
 event init(t=0){
 	foreach() {
-		b[] = y + 0.001*noise();
+		b[] = 9.81*(y)/273. + 0.001*noise();
 	}
 }
 
@@ -168,6 +168,8 @@ event movies(t += 0.1) {
 	scalar ekinRho[]; 		// Kinetic energy
   	vector db[];
   	scalar m[];
+	scalar bfy[];
+	scalar bfx[];
   
 	boundary({b});
  	gradients ({b}, {db});
@@ -179,14 +181,17 @@ event movies(t += 0.1) {
     		if (m[] > 0) {
       			m[] = log(sqrt(m[])+1.);
 		}
- 
+		bfy[] = b[]*u.y[];
+		bfx[] = b[]*u.x[];
 		omega[] = ((u.y[1,0] - u.y[-1,0]) - (u.x[0,1] - u.x[0,-1]))/(2*Delta); // Curl(u) 
 		ekinRho[] = 0.5*rho[]*(sq(u.x[]) + sq(u.y[]));
 		lev[] = level;
 	}
 
-	boundary ({m, lev, omega, ekinRho});
+	boundary ({m, bfx, bfy, lev, omega, ekinRho});
 	output_ppm (m, file = "mfield.mp4", n = 1<<maxlevel, min = 0, max = 1, linear = true);
+	output_ppm (bfy, file = "bfluxy.mp4", n = 1<<maxlevel, linear = true);
+	output_ppm (bfx, file = "bfluxx.mp4", n = 1<<maxlevel, linear = true);
 	output_ppm (b, file = "buoyancy.mp4", n = 1<<maxlevel, linear = true);
 	output_ppm (fan, file = "coord_fan.mp4", n = 1<<maxlevel, max = 1, min = 0);
 	output_ppm (ekinRho, file = "ekin.mp4", n = 1<<maxlevel, min = 0, max = 0.5*sq(kar.sV));
@@ -200,27 +205,34 @@ event sanity (t += 1){
 	scalar ekin[]; 		// Kinetic energy
 	double tempVol = 0.;
 	double tempEkin = 0.;	
-
-	foreach(reduction(+:tempVol) reduction(+:tempEkin)) {
+	double bf;
+	
+	foreach(reduction(+:tempVol) reduction(+:tempEkin) reduction(+:bf)) {
 		ekin[] = 0.5*rho[]*sq(Delta)*(sq(u.x[]) + sq(u.y[]));
 		tempEkin += ekin[];
 		#if dimension > 1			
 			tempVol += sq(Delta)*fan[];
-		#endif
-		#if dimension > 2
+			if (y<rot.y0/2.) {
+				bf += u.y[]*b[]*Delta;
+			}
+		#elif dimension > 2
 			tempVol = cube(Delta)*fan[];
+			bf += u.y[]*b[]*sq(Delta);
 		#endif
 	}
 
+
 	dia.rotVol = 1.*tempVol;
 	dia.Ekin = 1.*tempEkin;
-
 	
-	//printf("V=%g, Vr=%g, ",rot.V, dia.rotVol);
+	printf("bf=%g\n", bf);
+
+	/*
+	printf("V=%g, Vr=%g, ",rot.V, dia.rotVol);
 	printf("Energy: Ek=%g, W=%g, Ek/W=%g, dEk/dW=%g\n", 
 		dia.Ekin, dia.Wdone, dia.Ekin/dia.Wdone, 
 		(dia.Ekin-dia.EkinOld)/(dia.Wdone-dia.WdoneOld));
-
+	*/
 
 	
 	
@@ -229,7 +241,7 @@ event sanity (t += 1){
 }
 
 /* Progress event */
-event end(t+=2.; t <= 10.) {
+event end(t+=2.; t <= 30.) {
 	printf("i=%d t=%g p=%d u=%d b=%d \n", i, t, mgp.i, mgu.i, mgb.i);
 }
 
@@ -245,11 +257,11 @@ void rotor_init() {
 	// Set variables 
     	rot.rampT = 1.;
 	rot.R = L0/30.;     
-	rot.W = rot.R/5.;                      
-    	rot.Prho = 10.;
+	rot.W = rot.R/4.;                      
+    	rot.Prho = 50.;
     
    	rot.x0 = L0/2.;
-	rot.y0 = 3*L0/4.;
+	rot.y0 = 3.*L0/4.;
 	rot.z0 = 0.;
 	
 	rot.theta = M_PI/2.;	// Polar angle

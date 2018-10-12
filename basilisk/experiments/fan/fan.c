@@ -1,4 +1,4 @@
-//#include "grid/octree.h" // For 3D
+#include "grid/octree.h" // For 3D
 #include "utils.h" 
 #include "navier-stokes/centered.h"
 #include "tracer.h"
@@ -64,7 +64,7 @@ Main Code, Events
 int main() {
 	
     	// Grid variables 
-    	init_grid(2<<7);
+    	init_grid(2<<5);
    	L0 = 50.;
    	X0 = Y0 = Z0 = 0.;
 	
@@ -78,7 +78,7 @@ int main() {
    	// Initialize physics 
    	rotor_init(); 
 	rotor_coord();
-	const face vector muc[] = {1./3000., 1./3000.};
+	const face vector muc[] = {0.*1./3000., 0.*1./3000.};
 	mu = muc;
 	a = av; // Link acceleration
 	kar.sV = pow(4*rot.Prho*rot.W,1./3.);
@@ -241,7 +241,7 @@ event sanity (t += 1){
 }
 
 /* Progress event */
-event end(t+=2.; t <= 30.) {
+event end(t+=2.; t <= 40.) {
 	printf("i=%d t=%g p=%d u=%d b=%d \n", i, t, mgp.i, mgu.i, mgb.i);
 }
 
@@ -262,8 +262,11 @@ void rotor_init() {
     
    	rot.x0 = L0/2.;
 	rot.y0 = 3.*L0/4.;
-	rot.z0 = 0.;
-	
+	#if dimension > 1
+		rot.z0 = 0.;
+	#elif dimension > 2
+		rot.z0 = L0/2.
+	#endif
 	rot.theta = M_PI/2.;	// Polar angle
 	rot.phi = -M_PI/2.;	// Azimuthal angle 
 

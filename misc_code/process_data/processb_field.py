@@ -21,7 +21,7 @@ for filename in os.listdir(data_dir):
     data_files.append(filename)
 #%%
 fig = plt.figure()
-ax = plt.axes(xlim=(0,0.6), ylim=(0,6))
+ax = plt.axes(xlim=(0, 15), ylim=(0,6))
 ln, = ax.plot([],[])
 
 def init():
@@ -40,7 +40,9 @@ def update(i):
         
     y = np.asarray(y[1:]).astype(np.float)
     b = np.asarray(b[1:]).astype(np.float)
+    b = b*273/9.81 
     ln.set_data(b, y)
+    
 
     f.close()
     return ln,

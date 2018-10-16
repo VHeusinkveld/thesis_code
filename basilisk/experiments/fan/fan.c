@@ -93,7 +93,7 @@ int main() {
 
   	// Adaptivity
   	minlevel = 2; 
-  	maxlevel = 8;
+  	maxlevel = 7;
   	eps = 0.05;
 
 	// Set boundary conditions
@@ -208,17 +208,17 @@ event movies(t += 0.1) {
 		output_ppm (lev, file = "grid_depth.mp4", n = 1<<maxlevel, min = minlevel, max = maxlevel);
 	#elif dimension > 2
 		scalar bfy[];
-		scalar l2[];
-		lambda2(u,l2);
+		//scalar l2[];
+		//lambda2(u,l2);
 	
 		foreach(){
 			bfy[] = b[]*u.y[];
 		}
 
-		boundary({bfy, l2, fan});
+		boundary({bfy, fan});
 		
-		if(vphi < -M_PI/12.){
-			vphi += M_PI/(12.*70.);
+		if(vphi < 0){
+			vphi += fabs(vphi);
 		}
 
 		clear();
@@ -226,10 +226,9 @@ event movies(t += 0.1) {
 		view(theta= M_PI/4., phi = vphi);
 		box(notics=false);
 		cells(alpha = rot.z0);
-		if(t > 100.){
-			squares("bfy", n = {0.,1,0.}, alpha=L0/2.);
-		}
-		isosurface("l2", color = "bfy");
+		squares("b", n = {1.,0,0.}, alpha=rot.x0);
+		squares("b", n = {0.,0,1.}, alpha=rot.z0);
+		//isosurface("l2", color = "bfy");
 		draw_vof("fan", fc = {1,0,0});
 		save("visual_3d.mp4");
 	#endif
@@ -277,7 +276,7 @@ event sanity (t += 1){
 }
 
 /* Progress event */
-event end(t+=2.; t <= 30.) {
+event end(t+=2.; t <= 90.) {
 	printf("i=%d t=%g p=%d u=%d b=%d \n", i, t, mgp.i, mgu.i, mgb.i);
 }
 

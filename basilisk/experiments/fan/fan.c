@@ -1,4 +1,6 @@
-//#include "grid/octree.h" // For 3D
+#include "grid/octree.h" // For 3D
+#include "lambda2.h"
+#include "view.h"
 #include "utils.h" 
 #include "navier-stokes/centered.h"
 #include "tracer.h"
@@ -88,8 +90,8 @@ int main() {
 	b.gradient = minmod2; // Flux limiter 
 
   	// Adaptivity
-  	minlevel = 4; 
-  	maxlevel = 8;
+  	minlevel = 2; 
+  	maxlevel = 7;
   	eps = 0.05;
 
 	// Set boundary conditions
@@ -114,6 +116,7 @@ event init(t=0){
 	}
 	rotor_coord();
 	refine (fan[] > 0. && level < maxlevel);
+	view(theta = M_PI/4., phi = -M_PI/6., tx = 0., ty = -0.7);
 }
 
 /* Gravity forcing */
@@ -163,41 +166,55 @@ event profiler(t += 1.) {
 } */
 
 /* Visualisation */ 
-event movies(t += 0.1) {	
-    	vertex scalar omega[]; 	// Vorticity
-	scalar lev[];	 	// Grid depth
-	scalar ekinRho[]; 		// Kinetic energy
-  	vector db[];
-  	scalar m[];
-	scalar bfy[];
-	scalar bfx[];
+event movies(t += 0.1) {
+	#if dimension < 3
+		vertex scalar omega[]; 	// Vorticity
+		scalar lev[];	 	// Grid depth
+		scalar ekinRho[]; 		// Kinetic energy
+		vector db[];
+		scalar m[];
+		scalar bfy[];
+		scalar bfx[];
   
-	boundary({b});
- 	gradients ({b}, {db});
-        foreach() {
-		m[] = 0;
-		foreach_dimension() {
-     	 		m[] += sq(db.x[]);
+		boundary({b});
+		gradients ({b}, {db});
+		foreach() {
+			m[] = 0;
+			foreach_dimension() {
+				m[] += sq(db.x[]);
+			}
+			if (m[] > 0) {
+				m[] = log(sqrt(m[])+1.);
+			}
+			bfy[] = b[]*u.y[];
+			bfx[] = b[]*u.x[];
+			omega[] = ((u.y[1,0] - u.y[-1,0]) - (u.x[0,1] - u.x[0,-1]))/(2*Delta); // Curl(u) 
+			ekinRho[] = 0.5*rho[]*(sq(u.x[]) + sq(u.y[]));
+			lev[] = level;
 		}
-    		if (m[] > 0) {
-      			m[] = log(sqrt(m[])+1.);
-		}
-		bfy[] = b[]*u.y[];
-		bfx[] = b[]*u.x[];
-		omega[] = ((u.y[1,0] - u.y[-1,0]) - (u.x[0,1] - u.x[0,-1]))/(2*Delta); // Curl(u) 
-		ekinRho[] = 0.5*rho[]*(sq(u.x[]) + sq(u.y[]));
-		lev[] = level;
-	}
 
-	boundary ({m, bfx, bfy, lev, omega, ekinRho});
-	output_ppm (m, file = "mfield.mp4", n = 1<<maxlevel, min = 0, max = 1, linear = true);
-	output_ppm (bfy, file = "bfluxy.mp4", n = 1<<maxlevel, linear = true);
-	output_ppm (bfx, file = "bfluxx.mp4", n = 1<<maxlevel, linear = true);
-	output_ppm (b, file = "buoyancy.mp4", n = 1<<maxlevel, linear = true);
-	output_ppm (fan, file = "coord_fan.mp4", n = 1<<maxlevel, max = 1, min = 0);
-	output_ppm (ekinRho, file = "ekin.mp4", n = 1<<maxlevel, min = 0, max = 0.5*sq(kar.sV));
-	output_ppm (omega, file = "vort.mp4", n = 1<<maxlevel, linear = true); 
-	output_ppm (lev, file = "grid_depth.mp4", n = 1<<maxlevel, min = minlevel, max = maxlevel);
+		boundary ({m, bfx, bfy, lev, omega, ekinRho});
+		output_ppm (m, file = "mfield.mp4", n = 1<<maxlevel, min = 0, max = 1, linear = true);
+		output_ppm (bfy, file = "bfluxy.mp4", n = 1<<maxlevel, linear = true);
+		output_ppm (bfx, file = "bfluxx.mp4", n = 1<<maxlevel, linear = true);
+		output_ppm (b, file = "buoyancy.mp4", n = 1<<maxlevel, linear = true);
+		output_ppm (fan, file = "coord_fan.mp4", n = 1<<maxlevel, max = 1, min = 0);
+		output_ppm (ekinRho, file = "ekin.mp4", n = 1<<maxlevel, min = 0, max = 0.5*sq(kar.sV));
+		output_ppm (omega, file = "vort.mp4", n = 1<<maxlevel, linear = true); 
+		output_ppm (lev, file = "grid_depth.mp4", n = 1<<maxlevel, min = minlevel, max = maxlevel);
+	#elif dimension > 2
+		scalar l2[];
+		lambda2(u,l2);
+		boundary({l2, fan});
+	
+		clear();
+		box(notics=false);
+		cells(alpha = 0);
+		isosurface("l2");
+		draw_vof("fan", fc = {1,0,0});
+		save("visual_3d.mp4");
+
+	#endif
 }
 
 /* Sanity checks */
@@ -242,7 +259,7 @@ event sanity (t += 1){
 }
 
 /* Progress event */
-event end(t+=2.; t <= 10.) {
+event end(t+=2.; t <= 20.) {
 	printf("i=%d t=%g p=%d u=%d b=%d \n", i, t, mgp.i, mgu.i, mgb.i);
 }
 
@@ -263,10 +280,10 @@ void rotor_init() {
     
    	rot.x0 = L0/2.;
 	rot.y0 = 3.*L0/4.;
-	#if dimension > 1
+	#if dimension < 3
 		rot.z0 = 0.;
 	#elif dimension > 2
-		rot.z0 = L0/2.
+		rot.z0 = L0/2.;
 	#endif
 	rot.theta = M_PI/2.;	// Polar angle
 	rot.phi = -M_PI/2.;	// Azimuthal angle 

@@ -4,18 +4,17 @@
 #include "view.h"
 //TODO center drawing function with origin
 
-int main()
-{
-  init_grid(128);
+int main() {
+  init_grid(64);
   double L0 = 1.;
   X0 = Y0 = Z0 = 0.;
-  
+ 
   double R = 0.25;
   double w = 0.10;
   
-  double xf = L0/2.;
-  double yf = L0/2.;
-  double zf = L0/2.;
+  double xf = 1.*L0/2.;
+  double yf = 1.*L0/2.;
+  double zf = 1.*L0/2.;
   scalar fan[], sph[], plane[];
   fan.prolongation = fraction_refine;
   view(theta = 0.1, phi = 0.3);
@@ -23,9 +22,8 @@ int main()
   double rTheta = 0.;  
   double rPhi = 0.;
 
-  double steps = 20.;
-  for (double i = 0.; i < steps; i+=1.)
-  {
+  double steps = 40.;
+  for(double i=0;i<steps;i++) {
     if(i<=40.){
       rTheta += 2*M_PI/40.;
       rPhi = 0.;
@@ -52,9 +50,10 @@ int main()
       fan[] *= plane[];
     clear();
     boundary({fan});
-    cells(alpha = 0);
+    view(tx=-L0/2., ty=-L0/2.);
+    cells(alpha = 0, );
     draw_vof("fan");
     save("puck.mp4");
-    adapt_wavelet({fan}, (double[]){0.01}, 7, 7);
+    adapt_wavelet({fan}, (double[]){0.01}, 7, 4);
   }
 }

@@ -1,4 +1,4 @@
-#include "grid/octree.h" // For 3D
+//#include "grid/octree.h" // For 3D
 #include "utils.h" 
 #include "navier-stokes/centered.h"
 #include "tracer.h"
@@ -77,7 +77,6 @@ int main() {
 
    	// Initialize physics 
    	rotor_init(); 
-	rotor_coord();
 	const face vector muc[] = {0.*1./3000., 0.*1./3000.};
 	mu = muc;
 	a = av; // Link acceleration
@@ -113,6 +112,8 @@ event init(t=0){
 	foreach() {
 		b[] = 9.81*(y)/273. + 0.001*noise();
 	}
+	rotor_coord();
+	refine (fan[] > 0. && level < maxlevel);
 }
 
 /* Gravity forcing */
@@ -241,7 +242,7 @@ event sanity (t += 1){
 }
 
 /* Progress event */
-event end(t+=2.; t <= 40.) {
+event end(t+=2.; t <= 10.) {
 	printf("i=%d t=%g p=%d u=%d b=%d \n", i, t, mgp.i, mgu.i, mgb.i);
 }
 

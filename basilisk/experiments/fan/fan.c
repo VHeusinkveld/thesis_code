@@ -93,7 +93,7 @@ int main() {
 
   	// Adaptivity
   	minlevel = 2; 
-  	maxlevel = 7;
+  	maxlevel = 8;
   	eps = 0.05;
 
 	// Set boundary conditions
@@ -118,7 +118,7 @@ event init(t=0){
 	}
 	rotor_coord();
 	refine (fan[] > 0. && level < maxlevel);
-	view(tx = 0., ty = -0.6);
+	view(tx = 0., ty = -0.5);
 	vphi = -M_PI/6.;
 	view(theta=M_PI/4., phi=vphi);
 }
@@ -217,8 +217,8 @@ event movies(t += 0.1) {
 
 		boundary({bfy, l2, fan});
 		
-		if(vphi < M_PI/36){
-			vphi += M_PI/(36/7*70);
+		if(vphi < -M_PI/12.){
+			vphi += M_PI/(12.*70.);
 		}
 
 		clear();
@@ -277,7 +277,7 @@ event sanity (t += 1){
 }
 
 /* Progress event */
-event end(t+=2.; t <= 20.) {
+event end(t+=2.; t <= 30.) {
 	printf("i=%d t=%g p=%d u=%d b=%d \n", i, t, mgp.i, mgu.i, mgb.i);
 }
 

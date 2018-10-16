@@ -17,8 +17,7 @@ int main() {
   double zf = 1.*L0/2.;
   scalar fan[], sph[], plane[];
   fan.prolongation = fraction_refine;
-  view(theta = 0.1, phi = 0.3);
-
+  view(theta = -0.1, phi = 0.3, tx=-L0/2., ty=-L0/2.);
   double rTheta = 0.;  
   double rPhi = 0.;
 
@@ -50,8 +49,9 @@ int main() {
       fan[] *= plane[];
     clear();
     boundary({fan});
-    view(tx=-L0/2., ty=-L0/2.);
-    cells(alpha = 0, );
+    double fac = 0.1*L0;
+    double alp = rn[0]*(xf + fac*rn[0]) + rn[1]*(yf + fac*rn[1]) + rn[2]*(zf + fac*rn[2]);
+    cells(n = {rn[0],rn[1],rn[2]}, alpha = alp);
     draw_vof("fan");
     save("puck.mp4");
     adapt_wavelet({fan}, (double[]){0.01}, 7, 4);

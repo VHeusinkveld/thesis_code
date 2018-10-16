@@ -22,6 +22,8 @@ struct sDiag dia; 		// Diagnostics
 struct sKar kar;
 scalar fan[];			// Fan volume fraction
 
+double vphi;
+
 scalar b[];		// Buoyancy
 scalar * tracers = {b};
 face vector av[]; 
@@ -116,7 +118,9 @@ event init(t=0){
 	}
 	rotor_coord();
 	refine (fan[] > 0. && level < maxlevel);
-	view(theta = M_PI/4., phi = -M_PI/6., tx = 0., ty = -0.7);
+	view(tx = 0., ty = -0.6);
+	vphi = -M_PI/6.;
+	view(theta=M_PI/4., phi=vphi);
 }
 
 /* Gravity forcing */
@@ -203,17 +207,31 @@ event movies(t += 0.1) {
 		output_ppm (omega, file = "vort.mp4", n = 1<<maxlevel, linear = true); 
 		output_ppm (lev, file = "grid_depth.mp4", n = 1<<maxlevel, min = minlevel, max = maxlevel);
 	#elif dimension > 2
+		scalar bfy[];
 		scalar l2[];
 		lambda2(u,l2);
-		boundary({l2, fan});
 	
+		foreach(){
+			bfy[] = b[]*u.y[];
+		}
+
+		boundary({bfy, l2, fan});
+		
+		if(vphi < M_PI/36){
+			vphi += M_PI/(36/7*70);
+		}
+
 		clear();
+		// translate(-rot.x0/L0, -rot.y0/L0, -rot.z0/L0)
+		view(theta= M_PI/4., phi = vphi);
 		box(notics=false);
-		cells(alpha = 0);
-		isosurface("l2");
+		cells(alpha = rot.z0);
+		if(t > 100.){
+			squares("bfy", n = {0.,1,0.}, alpha=L0/2.);
+		}
+		isosurface("l2", color = "bfy");
 		draw_vof("fan", fc = {1,0,0});
 		save("visual_3d.mp4");
-
 	#endif
 }
 

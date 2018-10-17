@@ -3,9 +3,11 @@
 #include "view.h"
 #include "utils.h" 
 #include "navier-stokes/centered.h"
+#include "SGS.h"
 #include "tracer.h"
 #include "diffusion.h"
 #include "fractions.h"
+
 #include "profile5b.h"
 
 /*
@@ -81,8 +83,8 @@ int main() {
 
    	// Initialize physics 
    	rotor_init(); 
-	const face vector muc[] = {0.*1./3000., 0.*1./3000.};
-	mu = muc;
+	//const face vector muc[] = {0.*1./3000., 0.*1./3000.};
+	//mu = muc;
 	a = av; // Link acceleration
 	kar.sV = pow(4*rot.Prho*rot.W,1./3.);
 
@@ -208,8 +210,8 @@ event movies(t += 0.1) {
 		output_ppm (lev, file = "grid_depth.mp4", n = 1<<maxlevel, min = minlevel, max = maxlevel);
 	#elif dimension > 2
 		scalar bfy[];
-		//scalar l2[];
-		//lambda2(u,l2);
+		scalar l2[];
+		lambda2(u,l2);
 	
 		foreach(){
 			bfy[] = b[]*u.y[];
@@ -217,8 +219,8 @@ event movies(t += 0.1) {
 
 		boundary({bfy, fan});
 		
-		if(vphi < 0){
-			vphi += fabs(vphi);
+		if(vphi < -M_PI/12.){
+			vphi += M_PI/(12*70);
 		}
 
 		clear();
@@ -226,9 +228,9 @@ event movies(t += 0.1) {
 		view(theta= M_PI/4., phi = vphi);
 		box(notics=false);
 		cells(alpha = rot.z0);
-		squares("b", n = {1.,0,0.}, alpha=rot.x0);
-		squares("b", n = {0.,0,1.}, alpha=rot.z0);
-		//isosurface("l2", color = "bfy");
+		//squares("b", n = {1.,0,0.}, alpha=rot.x0);
+		//squares("b", n = {0.,0,1.}, alpha=rot.z0);
+		isosurface("l2", color = "bfy");
 		draw_vof("fan", fc = {1,0,0});
 		save("visual_3d.mp4");
 	#endif
@@ -276,7 +278,7 @@ event sanity (t += 1){
 }
 
 /* Progress event */
-event end(t+=2.; t <= 90.) {
+event end(t+=2.; t <= 50.) {
 	printf("i=%d t=%g p=%d u=%d b=%d \n", i, t, mgp.i, mgu.i, mgb.i);
 }
 

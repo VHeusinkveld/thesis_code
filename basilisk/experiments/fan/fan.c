@@ -33,7 +33,8 @@ face vector av[];
 
 /* Structures */
 struct sCase {
-	double ugeo, vgeo;
+	double ugeo;
+	double vgeo;
 	double corf;
 };
 
@@ -88,8 +89,8 @@ int main() {
 	#endif
 
    	// Initialize physics 
-	def.ugeo = 0.5;
-	def.vgeo = 0.;
+	def.ugeo = 0.0;
+	def.vgeo = 0.0;
 	def.corf = pow(10.,-4.);
    	rotor_init(); 
 	//const face vector muc[] = {0.*1./3000., 0.*1./3000.};
@@ -109,11 +110,16 @@ int main() {
 
 	// Set boundary conditions
 	periodic (left);
-    	
-	u.t[bottom] = dirichlet(0.);
+	#if dimension > 2
+		periodic(front);
+	#endif    	
+
+	u.t[bottom] = neumann(0.);
+	u.r[bottom] = neumann(0.);
 	u.t[top] = dirichlet(def.ugeo);
+	u.r[top] = dirichlet(def.vgeo);
 	b[bottom] = dirichlet(0.);
-	b[top] = neumann(1.);
+	b[top] = neumann(0.);
 
 	// Limit maximum time step 
 	DT = 0.05;
@@ -144,11 +150,17 @@ event acceleration(i++){
 	foreach_face(y){
 		av.y[] = (b[] + b[0,-1])/2.;
 	}
-	foreach_face(x){
-		av.x[] = (2.*def.ugeo - u.x[] - u.x[-1,0])/2.*def.corf;
-		//av.z[] = (2.*def.vgeo - u.z[] - u.z[0,-1])/2.*def.corf;
+	if(def.ugeo>0.){
+		foreach_face(x){
+			av.x[] = (def.ugeo - uf.x[])*def.corf;
+		}
 	}
-} 
+	if(def.vgeo>0.){
+		foreach_face(z){
+			av.z[] = (def.vgeo - uf.z[])*def.corf;
+		}
+	} 
+}
 
 mgstats mgb;
 

@@ -1,0 +1,44 @@
+Ventilator, plotting 2 b fields, res7, 90 sec run.
+# Octree, 1870 steps, 7371.05 CPU, 1932 real, 1.15e+05 points.step/s, 35 var
+   calls    total     self   % total   function
+   84215   524.13   524.13     27.1%   boundary():/home/vinlinux/basilisk/src/grid/cartesian-common.h:301
+    3742   458.08   343.57     17.8%   project():/home/vinlinux/basilisk/src/poisson.h:465
+    1871   388.38   334.64     17.3%   viscous_term():/home/vinlinux/basilisk/src/navier-stokes/centered.h:299
+    3742   336.85   284.63     14.7%   diffusion():/home/vinlinux/basilisk/src/diffusion.h:103
+    1871   414.51   115.16      6.0%   advection_term():/home/vinlinux/basilisk/src/navier-stokes/centered.h:256
+    5613    99.30    73.79      3.8%   fractions():/home/vinlinux/basilisk/src/fractions.h:324
+    1802    44.84    44.84      2.3%   squares():/home/vinlinux/basilisk/src/draw.h:874
+    1871   130.80    40.30      2.1%   adapt_wavelet():/home/vinlinux/basilisk/src/grid/tree-common.h:292
+    1871    52.03    32.08      1.7%   tracer_advection_0():/home/vinlinux/basilisk/src/tracer.h:40
+     901    23.61    23.61      1.2%   save():/home/vinlinux/basilisk/src/view.h:486
+    1871    30.13    21.25      1.1%   Eddyvis():/home/vinlinux/basilisk/src/SGS.h:66
+    1871   269.28    20.14      1.0%   projection():/home/vinlinux/basilisk/src/navier-stokes/centered.h:356
+    1870   125.61    18.89      1.0%   forcing():fan.c:146
+     901    13.91    13.91      0.7%   cells():/home/vinlinux/basilisk/src/draw.h:757
+     901   106.88    11.62      0.6%   movies():fan.c:237
+     901    11.60    11.60      0.6%   draw_vof():/home/vinlinux/basilisk/src/draw.h:708
+    1871    37.06     6.84      0.4%   acceleration():/home/vinlinux/basilisk/src/navier-stokes/centered.h:320
+    1872     4.79     4.79      0.2%   stability():/home/vinlinux/basilisk/src/navier-stokes/centered.h:171
+    1871     4.58     4.58      0.2%   acceleration_0():fan.c:133
+     901     1.29     1.29      0.1%   box():/home/vinlinux/basilisk/src/draw.h:1001
+       3     0.67     0.67      0.0%   init_grid():/home/vinlinux/basilisk/src/grid/tree.h:1691
+      91     0.29     0.29      0.0%   sanity():fan.c:278
+       1     0.43     0.18      0.0%   init_0():fan.c:126
+       1   1932.45     0.06      0.0%   run():/home/vinlinux/basilisk/src/run.h:37
+      46     0.03     0.03      0.0%   end():fan.c:283
+    3743    30.55     0.01      0.0%   properties():/home/vinlinux/basilisk/src/navier-stokes/centered.h:190
+       1     0.03     0.01      0.0%   init():/home/vinlinux/basilisk/src/navier-stokes/centered.h:158
+    1871    15.36     0.00      0.0%   adapt():/home/vinlinux/basilisk/src/navier-stokes/centered.h:366
+    1871   130.80     0.00      0.0%   adapt_0():fan.c:165
+    1871   168.45     0.00      0.0%   tracer_diffusion_1():/home/vinlinux/basilisk/src/SGS.h:74
+    1871   168.40     0.00      0.0%   tracer_diffusion_2():fan.c:140
+    1871     0.00     0.00      0.0%   set_dtmax():/home/vinlinux/basilisk/src/navier-stokes/centered.h:167
+    1871     0.00     0.00      0.0%   tracer_advection():/home/vinlinux/basilisk/src/navier-stokes/centered.h:180
+    1871     0.00     0.00      0.0%   tracer_diffusion_0():/home/vinlinux/basilisk/src/tracer.h:45
+    1871     0.00     0.00      0.0%   vof():/home/vinlinux/basilisk/src/navier-stokes/centered.h:179
+    1871     0.00     0.00      0.0%   tracer_diffusion():/home/vinlinux/basilisk/src/navier-stokes/centered.h:181
+     901     0.00     0.00      0.0%   compose_image():/home/vinlinux/basilisk/src/view.h:240
+      18     0.00     0.00      0.0%   boundary():/home/vinlinux/basilisk/src/grid/cartesian-common.h:291
+       1     0.00     0.00      0.0%   rotate():fan.c:160
+       1     0.00     0.00      0.0%   defaults_1():/home/vinlinux/basilisk/src/SGS.h:53
+       1     0.00     0.00      0.0%   defaults():/home/vinlinux/basilisk/src/navier-stokes/centered.h:131

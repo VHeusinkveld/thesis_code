@@ -22,6 +22,7 @@ double eps;				// Error in u fields
 struct sRotor rot;  	// Rotor details structure 
 struct sDiag dia; 		// Diagnostics
 struct sKar kar;
+struct sCase def;
 scalar fan[];			// Fan volume fraction
 
 double vphi;
@@ -31,6 +32,11 @@ scalar * tracers = {b};
 face vector av[]; 
 
 /* Structures */
+struct sCase {
+	double ugeo, vgeo;
+	double corf;
+};
+
 struct sRotor {	
 	double rampT;			// Time to start up rotor
 	double P, Prho;			// Power, powerdensity 
@@ -82,6 +88,9 @@ int main() {
 	#endif
 
    	// Initialize physics 
+	def.ugeo = 0.5;
+	def.vgeo = 0.;
+	def.corf = pow(10.,-4.);
    	rotor_init(); 
 	//const face vector muc[] = {0.*1./3000., 0.*1./3000.};
 	//mu = muc;
@@ -102,6 +111,7 @@ int main() {
 	periodic (left);
     	
 	u.t[bottom] = dirichlet(0.);
+	u.t[top] = dirichlet(def.ugeo);
 	b[bottom] = dirichlet(0.);
 	b[top] = neumann(1.);
 
@@ -117,18 +127,26 @@ int main() {
 event init(t=0){
 	foreach() {
 		b[] = 9.81*(y)/273. + 0.001*noise();
+		u.x[] = 1.*def.ugeo;
+		u.z[] = 1.*def.vgeo;
 	}
 	rotor_coord();
 	refine (fan[] > 0. && level < maxlevel);
 	view(tx = 0., ty = -0.5);
 	vphi = -M_PI/6.;
 	view(theta=M_PI/4., phi=vphi);
+
+	
 }
 
 /* Gravity forcing */
 event acceleration(i++){
 	foreach_face(y){
 		av.y[] = (b[] + b[0,-1])/2.;
+	}
+	foreach_face(x){
+		av.x[] = (2.*def.ugeo - u.x[] - u.x[-1,0])/2.*def.corf;
+		//av.z[] = (2.*def.vgeo - u.z[] - u.z[0,-1])/2.*def.corf;
 	}
 } 
 
@@ -217,7 +235,7 @@ event movies(t += 0.1) {
 			bfy[] = b[]*u.y[];
 		}
 
-		boundary({bfy, fan});
+		boundary({bfy, fan, l2});
 		
 		if(vphi < -M_PI/12.){
 			vphi += M_PI/(12*70);
@@ -229,7 +247,7 @@ event movies(t += 0.1) {
 		box(notics=false);
 		cells(alpha = rot.z0);
 		//squares("b", n = {1.,0,0.}, alpha=rot.x0);
-		//squares("b", n = {0.,0,1.}, alpha=rot.z0);
+		squares("b", n = {0.,0,1.}, alpha=rot.z0);
 		isosurface("l2", color = "bfy");
 		draw_vof("fan", fc = {1,0,0});
 		save("visual_3d.mp4");
@@ -278,7 +296,7 @@ event sanity (t += 1){
 }
 
 /* Progress event */
-event end(t+=2.; t <= 50.) {
+event end(t+=2.; t <= 30.) {
 	printf("i=%d t=%g p=%d u=%d b=%d \n", i, t, mgp.i, mgu.i, mgb.i);
 }
 

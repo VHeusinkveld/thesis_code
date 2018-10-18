@@ -24,7 +24,7 @@ struct sDiag dia; 		// Diagnostics
 struct sKar kar;
 struct sCase def;
 scalar fan[];			// Fan volume fraction
-
+scalar T_ave[];
 double vphi;
 
 scalar b[];		// Buoyancy
@@ -89,8 +89,8 @@ int main() {
 	#endif
 
    	// Initialize physics 
-	def.ugeo = 0.0;
-	def.vgeo = 0.0;
+	def.ugeo = 0.;
+	def.vgeo = 0.;
 	def.corf = pow(10.,-4.);
    	rotor_init(); 
 	//const face vector muc[] = {0.*1./3000., 0.*1./3000.};
@@ -119,7 +119,7 @@ int main() {
 	u.t[top] = dirichlet(def.ugeo);
 	u.r[top] = dirichlet(def.vgeo);
 	b[bottom] = dirichlet(0.);
-	b[top] = neumann(0.);
+	b[top] = neumann(9.81*y/273.);
 
 	// Limit maximum time step 
 	DT = 0.05;
@@ -138,9 +138,8 @@ event init(t=0){
 	}
 	rotor_coord();
 	refine (fan[] > 0. && level < maxlevel);
-	view(tx = 0., ty = -0.5);
+
 	vphi = -M_PI/6.;
-	view(theta=M_PI/4., phi=vphi);
 
 	
 }
@@ -242,27 +241,42 @@ event movies(t += 0.1) {
 		scalar bfy[];
 		scalar l2[];
 		lambda2(u,l2);
-	
+		scalar vxz[];
+
 		foreach(){
-			bfy[] = b[]*u.y[];
+			bfy[] = 1.*u.y[];
+			T_ave[] = ((t/0.1)*T_ave[] + b[])/(max(1.,t/0.1));
 		}
 
-		boundary({bfy, fan, l2});
+		boundary({bfy, fan, l2, vxz});
 		
 		if(vphi < -M_PI/12.){
 			vphi += M_PI/(12*70);
 		}
-
+		
 		clear();
+		view(tx = 0., ty = -0.5);
 		// translate(-rot.x0/L0, -rot.y0/L0, -rot.z0/L0)
 		view(theta= M_PI/4., phi = vphi);
 		box(notics=false);
 		cells(alpha = rot.z0);
 		//squares("b", n = {1.,0,0.}, alpha=rot.x0);
-		squares("b", n = {0.,0,1.}, alpha=rot.z0);
-		isosurface("l2", color = "bfy");
+		//squares("b", n = {0.,0,1.}, alpha=rot.z0);
+		isosurface("l2", color = "bfy", linear=true);
 		draw_vof("fan", fc = {1,0,0});
 		save("visual_3d.mp4");
+
+		if(t > 0.){
+			clear();
+			double slice = rot.y0-(t-1.)/10.;
+			view(theta=0, phi=0., tx=0., ty=-slice/L0-0.1);
+			box(notics=false);
+
+			
+			squares("T_ave", n = {0.,1.,0.}, alpha=slice);
+			save("temp_slab.mp4");
+		}
+		
 	#endif
 }
 
@@ -308,7 +322,7 @@ event sanity (t += 1){
 }
 
 /* Progress event */
-event end(t+=2.; t <= 30.) {
+event end(t+=2.; t <= 10.) {
 	printf("i=%d t=%g p=%d u=%d b=%d \n", i, t, mgp.i, mgu.i, mgb.i);
 }
 

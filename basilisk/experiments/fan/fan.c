@@ -105,7 +105,7 @@ int main() {
 
   	// Adaptivity
   	minlevel = 2; 
-  	maxlevel = 7;
+  	maxlevel = 8;
   	eps = 0.05;
 
 	// Set boundary conditions
@@ -245,7 +245,7 @@ event movies(t += 0.1) {
 
 		foreach(){
 			bfy[] = 1.*u.y[];
-			T_ave[] = ((t/0.1)*T_ave[] + b[])/(max(1.,t/0.1));
+			T_ave[] = ((t/0.1)*T_ave[] + b[])/(1. + t/0.1);
 		}
 
 		boundary({bfy, fan, l2, vxz});
@@ -265,17 +265,15 @@ event movies(t += 0.1) {
 		isosurface("l2", color = "bfy", linear=true);
 		draw_vof("fan", fc = {1,0,0});
 		save("visual_3d.mp4");
-
-		if(t > 0.){
+/*
+		if(t > 25.){
 			clear();
-			double slice = rot.y0-(t-1.)/10.;
-			view(theta=0, phi=0., tx=0., ty=-slice/L0-0.1);
+			double slice = fmod(fabs(rot.y0+2.5-(t-25.)),rot.y0+2.5);
+			view(relative=false,theta=0, phi=0., tx=0., ty=-slice/L0-0.1);
 			box(notics=false);
-
-			
-			squares("T_ave", n = {0.,1.,0.}, alpha=slice);
+			squares("T_ave", n = {0.,1.,0.}, alpha=slice, min=0., max=9.81*50./273.);
 			save("temp_slab.mp4");
-		}
+		}*/
 		
 	#endif
 }
@@ -322,7 +320,7 @@ event sanity (t += 1){
 }
 
 /* Progress event */
-event end(t+=2.; t <= 10.) {
+event end(t+=2.; t <=30.) {
 	printf("i=%d t=%g p=%d u=%d b=%d \n", i, t, mgp.i, mgu.i, mgb.i);
 }
 

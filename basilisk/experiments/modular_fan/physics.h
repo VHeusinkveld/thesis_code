@@ -26,17 +26,17 @@ void init_physics(){
 	def.vgeo = 0.;
 	def.corf = pow(10.,-4.);
 	b.nodump = true; 
-    	foreach() {
+    	
+	periodic (left);
+	#if dimension == 3
+		periodic(front);
+	#endif  
+
+	foreach() {
 		b[] = strat(y);
 		u.x[] = 1.*def.ugeo;
 		u.z[] = 1.*def.vgeo;
 	}
-
-    periodic (left);
-	#if dimension == 3
-		periodic(front);
-	#endif    
-
 }
 
 /* Gravity forcing */

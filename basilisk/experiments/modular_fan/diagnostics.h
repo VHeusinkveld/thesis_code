@@ -2,7 +2,7 @@
 #include "lambda2.h"
 #include "profile5b.h"
 
-double vphi;
+double vphi, stheta;
 scalar T_ave[];
 struct sDiag dia; 			// Diagnostics
 
@@ -22,6 +22,7 @@ struct sOutput out = {.dtVisual=0.1, .dtProfiles=0.1};
 
 event init(i = 0){
 	vphi = -M_PI/6.;
+	stheta = 0.;
 }
 
 /* Profiler 
@@ -58,8 +59,8 @@ event diagnostics (t+=0.2){
 	dia.rotVol = 1.*tempVol;
 	dia.Ekin = 1.*tempEkin;
 	
-	if(fabs(dia.rotVol/rot.V - 1) > 0.1){
-		printf("ERROR Check fan volume, V=%g, Vr=%g, ",rot.V, dia.rotVol);
+	if(fabs(dia.rotVol/rot.V - 1) > 0.05){
+		printf("ERROR Check fan volume, V=%g, Vr=%g\n",rot.V, dia.rotVol);
 	}
 	
 	static FILE * fpout = fopen("./results/output","w");
@@ -75,6 +76,8 @@ event diagnostics (t+=0.2){
 	}
 	fprintf(fpout, "%d\t%g\t%d\t%g\t%g\t%g\n",
 		i,t,n,(double)((1<<(maxlevel*3))/n),dia.Ekin,rot.Work);
+	printf("%d\t%g\t%g\t%g\n",n,(double)((1<<(maxlevel*3))/n),dia.Ekin,rot.Work);
+
 	dia.EkinOld = 1.*dia.Ekin;
 	dia.WdoneOld = 1.*rot.Work;
 }
@@ -105,12 +108,11 @@ event movies(t += out.dtVisual) {
     scalar l2[];
     lambda2(u,l2);
     scalar vxz[];
-
-    foreach(){
-        bfy[] = b[]*u.y[];
-        T_ave[] = ((t/0.1)*T_ave[] + b[])/(1. + t/0.1);
+   // if(t>30.){
+   // foreach(){
+   //     T_ave[] = (((t-30.)/0.1)*T_ave[] + b[])/(1. + (t-30.)/0.1);
+   // }
     }
-
     boundary({bfy, l2, vxz});
     
     if(vphi < -M_PI/12.){
@@ -118,16 +120,25 @@ event movies(t += out.dtVisual) {
     }
     
     clear();
-    view(tx = 0., ty = -0.5);
+    view(fov=15, tx = 0., ty = 0.2);
     // translate(-rot.x0/L0, -rot.y0/L0, -rot.z0/L0)
-    view(theta= M_PI/4., phi = vphi);
-    box(notics=false);
+    view(theta= -stheta+M_PI/2., phi = 0., width = 1000, height = 1000);
+    translate(-rot.x0,-rot.y0,-rot.z0) {
+    //box(notics=false);
     cells(alpha = rot.z0);
     //squares("b", n = {1.,0,0.}, alpha=rot.x0);
     //squares("b", n = {0.,0,1.}, alpha=rot.z0);
-    isosurface("l2", color="bfy");
+    //isosurface("l2", color="bfy");
+	
+    double rn[3] = {cos(stheta), 0, sin(stheta)};
+    double fac = 0.*L0;
+    double alp = rn[0]*(rot.x0 + fac*rn[0]) + rn[1]*(rot.y0 + fac*rn[1]) + rn[2]*(rot.z0 + fac*rn[2]);
     draw_vof("fan", fc = {1,0,0});
+    squares("b", n = {rn[0],rn[1],rn[2]}, alpha = alp);
+    }
     save("./results/visual_3d.mp4");
+    stheta += 0.01*M_PI;
+
 /*
     if(t > 25.){
         clear();

@@ -59,6 +59,6 @@ event adapt(i++) {
 }
 
 /* Progress event */
-event end(t+=2.; t <=60.) {
+event end(t+=2.; t <=120.) {
 	printf("i=%d t=%g p=%d u=%d b=%d \n", i, t, mgp.i, mgu.i, mgb.i);
 }

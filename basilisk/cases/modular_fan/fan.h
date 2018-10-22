@@ -105,7 +105,8 @@ void rotor_update() {
 		rot.A = sq(rot.R)*M_PI;      
 	#endif
                
-	rot.V = rot.A*rot.W;
+	rot.V = 4.*M_PI*pow(rot.R,3.)/3. - 
+		2*M_PI*pow(rot.R-rot.W/2., 2.)/3.*(2*rot.R + rot.W/2.);
 	rot.P = rot.V*rot.Prho;
     	rot.cu = pow(4*rot.Prho*rot.W*crho, 1./3.);
 }

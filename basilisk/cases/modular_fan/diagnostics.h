@@ -62,7 +62,7 @@ event diagnostics (t+=0.2){
 	dia.rotVol = 1.*tempVol;
 	dia.Ekin = 1.*tempEkin;
 	
-	if(fabs(dia.rotVol/rot.V - 1) > 0.05){
+	if(fabs(dia.rotVol/rot.V - 1) > 0.01){
 		printf("ERROR Check fan volume, V=%g, Vr=%g\n",rot.V, dia.rotVol);
 	}
 	
@@ -129,11 +129,10 @@ event movies(t += out.dtVisual) {
     
     clear();
     view(fov=15, tx = 0., ty = 0.2);
-    // translate(-rot.x0/L0, -rot.y0/L0, -rot.z0/L0)
     view(theta= -stheta+M_PI/2., phi = 0., width = 1000, height = 1000);
     translate(-rot.x0,-rot.y0,-rot.z0) {
     //box(notics=false);
-    cells(alpha = rot.z0);
+    cells(n = {1.,0.,0.}, alpha = rot.x0);
     //squares("b", n = {1.,0,0.}, alpha=rot.x0);
     //squares("b", n = {0.,0,1.}, alpha=rot.z0);
     //isosurface("l2", color="bfy");
@@ -142,7 +141,7 @@ event movies(t += out.dtVisual) {
     double fac = 0.*L0;
     double alp = rn[0]*(rot.x0 + fac*rn[0]) + rn[1]*(rot.y0 + fac*rn[1]) + rn[2]*(rot.z0 + fac*rn[2]);
     draw_vof("fan", fc = {1,0,0});
-    squares("bdiff", n = {rn[0],rn[1],rn[2]}, alpha = alp, min = 0.);
+    squares("bdiff", n = {rn[0],rn[1],rn[2]}, alpha = alp, min = 0., max = .5);
     }
     save("./results/visual_3d.mp4");
     //stheta += 0.01*M_PI;

@@ -30,8 +30,8 @@ int main() {
   	double yf = L0/2.;
   	double zf = L0/2.;
 
-  	double rTheta = 0.;  
-  	double rPhi = 0.;
+  	double rTheta = M_PI/4.;  
+  	double rPhi = M_PI/4.;
 	
     	coord fn = {sin(rTheta)*cos(-rPhi + M_PI/2.), sin(rTheta)*sin(-rPhi + M_PI/2.), cos(rTheta)};
 
@@ -79,9 +79,6 @@ int main() {
   	double yf = L0/2.;
   	double zf = L0/2.;
 
-  	double rTheta = 0.;  
-  	double rPhi = 0.;
-	
     	coord fn = {sin(rTheta)*cos(-rPhi + M_PI/2.), sin(rTheta)*sin(-rPhi + M_PI/2.), cos(rTheta)};
 
 	scalar sph[], planeup[], planedown[];

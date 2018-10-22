@@ -1,6 +1,6 @@
 #include "SGS.h"
 
-#define strat(s) (9.81*s/273. + 0.001*noise())
+#define strat(s) (9.81*s/273.)
 
 double crho = 1.;
 scalar b[];		

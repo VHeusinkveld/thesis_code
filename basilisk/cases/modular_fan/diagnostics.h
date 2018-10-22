@@ -11,6 +11,8 @@ struct sDiag {
 	double EkinOld;			// Track changes in kin energy 
 	double WdoneOld;		// Track changes in work done 
 	double rotVol;			// Track real rotor volume
+	double bE;
+	double bEold;
 };
 
 struct sOutput {
@@ -39,23 +41,24 @@ event diagnostics (t+=0.2){
 	double tempVol = 0.;
 	double tempEkin = 0.;	
 	double max_vel = 0.;
+	double bEnergy = 0.;
 	
-	foreach(reduction(+:n) reduction(+:tempVol) 
-		reduction(+:tempEkin) reduction(max:max_vel)) {
-		
+	foreach(reduction(+:n) reduction(+:tempVol) reduction(+:tempEkin) 
+		reduction(max:max_vel) reduction(+:bEnergy)) {
+		tempVol += dv()*fan[];
+		bEnergy += dv()*y*(b[] - strat(y));
+
 		#if dimension == 2			
 			ekin[] = 0.5*rho[]*cube(Delta)*(sq(u.x[]) + sq(u.y[])));
-			tempVol += sq(Delta)*fan[];
-
+			
 		#elif dimension == 3
 			ekin[] = 0.5*rho[]*cube(Delta)*(sq(u.x[]) + sq(u.y[]) + sq(u.z[]));
-			tempVol += cube(Delta)*fan[];
 		#endif
 		tempEkin += ekin[];
 		max_vel = max(max_vel, sqrt(sq(u.x[]) + sq(u.y[]) + sq(u.z[])));
 		n++;
 	}	
-
+	dia.bE = 1.*bEnergy;
 	dia.rotVol = 1.*tempVol;
 	dia.Ekin = 1.*tempEkin;
 	
@@ -72,14 +75,15 @@ event diagnostics (t+=0.2){
 		fprintf(fpca,"r\tW\tP\tmaxlvl\tminlvl\teps\n%g\t%g\t%g\t%d\t%d\t%g\n", 
 				rot.R, rot.W, rot.P, maxlevel, minlevel, eps);
 		
-		fprintf(fpout,"i\tt\tn\tred\tEkin\tWork\n");
+		fprintf(fpout,"i\tt\tn\tred\tEkin\tWork\tbE\n");
 	}
-	fprintf(fpout, "%d\t%g\t%d\t%g\t%g\t%g\n",
-		i,t,n,(double)((1<<(maxlevel*3))/n),dia.Ekin,rot.Work);
-	printf("%d\t%g\t%g\t%g\n",n,(double)((1<<(maxlevel*3))/n),dia.Ekin,rot.Work);
+	fprintf(fpout, "%d\t%g\t%d\t%g\t%g\t%g\t%g\n",
+		i,t,n,(double)((1<<(maxlevel*3))/n),dia.Ekin,rot.Work, dia.bE);
+	printf("%d\t%g\t%g\t%g\t%g\n",n,(double)((1<<(maxlevel*3))/n),dia.Ekin,rot.Work,dia.bE);
 
 	dia.EkinOld = 1.*dia.Ekin;
 	dia.WdoneOld = 1.*rot.Work;
+	dia.bEold = 1.*dia.bE;
 }
 
 /** Ouputting some movies, either in 2d or 3d.*/
@@ -104,17 +108,21 @@ event movies(t += out.dtVisual) {
 }
 #elif dimension == 3
 event movies(t += out.dtVisual) {
-    scalar bfy[];
-    scalar l2[];
-    lambda2(u,l2);
-    scalar vxz[];
-   // if(t>30.){
-   // foreach(){
-   //     T_ave[] = (((t-30.)/0.1)*T_ave[] + b[])/(1. + (t-30.)/0.1);
-   // }
+    scalar bdiff[];
+	
+    foreach(){
+	bdiff[] = b[] - strat(y);
     }
-    boundary({bfy, l2, vxz});
-    
+
+    boundary({bdiff});
+    //scalar l2[];
+    //lambda2(u,l2);
+    // if(t>30.){
+    // foreach(){
+    //     T_ave[] = (((t-30.)/0.1)*T_ave[] + b[])/(1. + (t-30.)/0.1);
+    // }
+    // }
+
     if(vphi < -M_PI/12.){
         vphi += M_PI/(12*70);
     }
@@ -134,10 +142,10 @@ event movies(t += out.dtVisual) {
     double fac = 0.*L0;
     double alp = rn[0]*(rot.x0 + fac*rn[0]) + rn[1]*(rot.y0 + fac*rn[1]) + rn[2]*(rot.z0 + fac*rn[2]);
     draw_vof("fan", fc = {1,0,0});
-    squares("b", n = {rn[0],rn[1],rn[2]}, alpha = alp);
+    squares("bdiff", n = {rn[0],rn[1],rn[2]}, alpha = alp, min = 0.);
     }
     save("./results/visual_3d.mp4");
-    stheta += 0.01*M_PI;
+    //stheta += 0.01*M_PI;
 
 /*
     if(t > 25.){

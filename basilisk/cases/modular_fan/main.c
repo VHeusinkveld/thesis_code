@@ -29,10 +29,11 @@ int main() {
 	p.refine = p.prolongation = refine_linear;
 	b.gradient = minmod2; // Flux limiter 
 
-  	minlevel = 2; 
-  	maxlevel = 8;
-  	meps = 1.;
-	DT=0.5;
+  	minlevel = 3; 
+  	maxlevel = 7;
+  	meps = .5;
+	DT = 10E-5;
+        TOLERANCE=10E-6;
 	CFL = 0.5;
 
     	run();
@@ -44,7 +45,12 @@ event init(t = 0){
 	init_rotor();
 	fan.prolongation=fraction_refine;
 	refine (fan[] > 0. && level < maxlevel);
-	eps = min(meps, 0.5*rot.cu);
+	eps = min(meps, 0.1*rot.cu);
+}
+
+event init_change(i=10){
+	TOLERANCE=10E-3;
+	DT = 0.05;
 }
 
 /* Adaptivity function called */

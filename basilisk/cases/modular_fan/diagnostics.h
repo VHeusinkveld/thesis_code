@@ -20,7 +20,7 @@ struct sOutput {
 	double dtProfiles;
 };
 
-struct sOutput out = {.dtVisual=0.1, .dtProfiles=0.1};
+struct sOutput out = {.dtVisual=0.2, .dtProfiles=0.2};
 
 event init(i = 0){
 	vphi = -M_PI/6.;
@@ -66,8 +66,8 @@ event diagnostics (t+=0.2){
 		printf("ERROR Check fan volume, V=%g, Vr=%g\n",rot.V, dia.rotVol);
 	}
 	
-	static FILE * fpout = fopen("./results/output","w");
-	static FILE * fpca = fopen("./results/case","w");
+	static FILE * fpout = fopen("output","w");
+	static FILE * fpca = fopen("case","w");
 
 	if(t==0.){
 		fprintf(fpca,"L0\n %g\n",L0);	
@@ -101,10 +101,10 @@ event movies(t += out.dtVisual) {
     }
 
     boundary ({b, lev, omega, ekinRho});
-    output_ppm (b, file = "./results/buoyancy.mp4", n = 1<<maxlevel, linear = true);
-    output_ppm (ekinRho, file = "./results/ekin.mp4", n = 1<<maxlevel, min = 0, max = 0.5*sq(rot.cu));
-    output_ppm (omega, file = "./results/vort.mp4", n = 1<<maxlevel, linear = true); 
-    output_ppm (lev, file = "./results/grid_depth.mp4", n = 1<<maxlevel, min = minlevel, max = maxlevel);
+    output_ppm (b, file = "ppm2mp4 ./results/buoyancy.mp4", n = 1<<maxlevel, linear = true);
+    output_ppm (ekinRho, file = "ppm2mp4 ./results/ekin.mp4", n = 1<<maxlevel, min = 0, max = 0.5*sq(rot.cu));
+    output_ppm (omega, file = "ppm2mp4 ./results/vort.mp4", n = 1<<maxlevel, linear = true); 
+    output_ppm (lev, file = "ppm2mp4 ./results/grid_depth.mp4", n = 1<<maxlevel, min = minlevel, max = maxlevel);
 }
 #elif dimension == 3
 event movies(t += out.dtVisual) {
@@ -141,9 +141,9 @@ event movies(t += out.dtVisual) {
     double fac = 0.*L0;
     double alp = rn[0]*(rot.x0 + fac*rn[0]) + rn[1]*(rot.y0 + fac*rn[1]) + rn[2]*(rot.z0 + fac*rn[2]);
     draw_vof("fan", fc = {1,0,0});
-    squares("bdiff", n = {rn[0],rn[1],rn[2]}, alpha = alp, min = 0., max = .5);
+    squares("bdiff", n = {rn[0],rn[1],rn[2]}, alpha = alp, min = 0., max = .036);
     }
-    save("./results/visual_3d.mp4");
+    save("ppm2mp4 ./results/visual_3d.mp4");
     //stheta += 0.01*M_PI;
 
 /*

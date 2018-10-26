@@ -197,7 +197,7 @@ event movies(t += 0.1) {
 }
 
 // Final event
-event end(t += 2; t <= 20) {
+event end(t += 2; t <= 5) {
 	printf("i = %d t = %g\n", i, t);
 }
 

@@ -30,8 +30,8 @@ int main() {
 	b.gradient = minmod2; // Flux limiter 
 
   	minlevel = 3; 
-  	maxlevel = 7;
-  	meps = .5;
+  	maxlevel = 8;
+  	meps = 10.;
 	DT = 10E-5;
         TOLERANCE=10E-6;
 	CFL = 0.5;
@@ -45,7 +45,7 @@ event init(t = 0){
 	init_rotor();
 	fan.prolongation=fraction_refine;
 	refine (fan[] > 0. && level < maxlevel);
-	eps = min(meps, 0.1*rot.cu);
+	eps = min(meps, 0.07*rot.cu);
 }
 
 event init_change(i=10){
@@ -59,6 +59,6 @@ event adapt(i++) {
 }
 
 /* Progress event */
-event end(t+=2.; t <=120.) {
+event end(t+=2.; t <=20.) {
 	printf("i=%d t=%g p=%d u=%d b=%d \n", i, t, mgp.i, mgu.i, mgb.i);
 }

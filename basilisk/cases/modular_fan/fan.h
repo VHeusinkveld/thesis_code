@@ -108,7 +108,7 @@ void rotor_update() {
 	rot.V = 4.*M_PI*pow(rot.R,3.)/3. - 
 		2*M_PI*pow(rot.R-rot.W/2., 2.)/3.*(2*rot.R + rot.W/2.);
 	rot.P = rot.V*rot.Prho;
-    	rot.cu = pow(4*rot.Prho*rot.W*crho, 1./3.);
+    	rot.cu = pow(3*rot.Prho*rot.W*crho, 1./3.);
 }
 
 /** Function returning the volume fractions of a fan object */

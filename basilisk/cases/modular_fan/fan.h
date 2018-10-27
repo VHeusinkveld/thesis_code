@@ -43,11 +43,11 @@ void init_rotor() {
         #elif dimension == 3
             	rot.z0 = L0/2.;
         #endif
-    }
+        }
     	if(!rot.theta)
 	    	rot.theta = M_PI/2.;	// Polar angle
     	if(!rot.phi)
-	    	rot.phi = -M_PI/2.;	   // Azimuthal angle 
+	    	rot.phi = -10.*M_PI/180.;	   // Azimuthal angle 
 
     	if(rot.rotate) {
         	rot.xt = 0;

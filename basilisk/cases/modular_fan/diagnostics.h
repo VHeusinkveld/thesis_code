@@ -5,6 +5,8 @@
 /** Define variables and structures to do: diagnostics, ouput data, output movies. */
 
 scalar b_ave[];				// Averaged buoyancy field
+scalar Ri[];
+scalar bdiff[];
 struct sDiag dia; 			// Diagnostics
 
 struct sDiag {
@@ -47,8 +49,8 @@ event init(i = 0){
 /** Profiles for the buoyancy */
 event profiles(t += out.dtProfile) {
 	char nameProf[80];
-	snprintf(nameProf, 80, "./%s/profile/buoyancy/bt=%05g", out.dir, t);
-	profile(list = {b}, fname = nameProf);
+	snprintf(nameProf, 80, "./%s/profiles/t=%05g", out.dir, t);
+	profile(list = {b, Ri, bdiff}, fname = nameProf);
 }
 
 /** Diagnosing: kinetic energy, diagnosed rotor volume, buoyancy energy, ammount of cells used.*/
@@ -58,10 +60,11 @@ event diagnostics (t+=0.2){
 	double tempVol = 0.;
 	double tempEkin = 0.;
 	double max_vel = 0.;
+	double turbVol = 0.;
 	double bEnergy = 0.;
 	
 	foreach(reduction(+:n) reduction(+:tempVol) reduction(+:tempEkin) 
-		reduction(max:max_vel) reduction(+:bEnergy)) {
+		reduction(max:max_vel) reduction(+:bEnergy) reduction(+:turbVol)) {
 		tempVol += dv()*fan[];
 		bEnergy += dv()*y*(b[] - strat(y));
 		
@@ -72,7 +75,10 @@ event diagnostics (t+=0.2){
 		ekin[] *= 0.5*rho[]*dv();	
 		tempEkin += ekin[];
 		n++;
-	}	
+		Ri[] = ((b[0,1]-b[0,-1])/(2*Delta))/(sq((u.x[0,-1]-uf.x[0,1])/(2*Delta)) + sq((uf.z[0,1]-uf.z[0,-1])/(2*Delta)) + 0.000000000001) < 0.25 ? 1. : 0.; 
+		turbVol += dv()*Ri[];
+	}
+	
 	dia.bE = 1.*bEnergy;
 	dia.rotVol = 1.*tempVol;
 	dia.Ekin = 1.*tempEkin;
@@ -96,12 +102,12 @@ event diagnostics (t+=0.2){
 		fprintf(fpca,"inversion\tr\tW\tP\tmaxlvl\tminlvl\teps\n%g\t%g\t%g\t%g\t%d\t%d\t%g\n", 
 				INVERSION, rot.R, rot.W, rot.P, maxlevel, minlevel, eps);
 		
-		fprintf(fpout,"i\tt\tn\tred\tEkin\tWork\tbE\n");
+		fprintf(fpout,"i\tt\tn\tred\tEkin\tWork\tbE\tturbVol\n");
 	}
-	fprintf(fpout, "%d\t%g\t%d\t%g\t%g\t%g\t%g\n",
-		i,t,n,(double)((1<<(maxlevel*3))/n),dia.Ekin,rot.Work, dia.bE);
+	fprintf(fpout, "%d\t%g\t%d\t%g\t%g\t%g\t%g\t%g\n",
+		i,t,n,(double)((1<<(maxlevel*3))/n),dia.Ekin,rot.Work, dia.bE, turbVol);
 	
-	fprintf(stderr, "%d\t%g\t%g\t%g\t%g\n",n,(double)((1<<(maxlevel*3))/n),dia.Ekin,rot.Work,dia.bE);
+	fprintf(stderr, "%d\t%g\t%g\t%g\t%g\t%g\n",n,(double)((1<<(maxlevel*3))/n),dia.Ekin,rot.Work,dia.bE,turbVol);
 
 	dia.EkinOld = 1.*dia.Ekin;
 	dia.WdoneOld = 1.*rot.Work;
@@ -130,7 +136,6 @@ event movies(t += out.dtVisual) {
 }
 #elif dimension == 3
 event movies(t += out.dtVisual) {
-    scalar bdiff[];
     scalar l2[];
     scalar bfy[];
 
@@ -140,7 +145,6 @@ event movies(t += out.dtVisual) {
         if(t > out.startBave){
     	    b_ave[] = (((t-out.startBave)/out.dtVisual)*b_ave[] + b[])/(1. + (t-out.startBave)/out.dtVisual);
         }
-
     }
 
     lambda2(u,l2);
@@ -158,15 +162,14 @@ event movies(t += out.dtVisual) {
       	squares("b", n = {0.,0,1.}, alpha=rot.z0, min=strat(0.), max=strat(L0));
         cells(n = {0.,0.,1.}, alpha = rot.z0);
     }
-    /*
+    
     translate(0.,-rot.y0,-rot.z0){
-        squares("b_ave", n = {1.,0,0.}, alpha=rot.x0, min=strat(0.), max=strat(L0));
-    }*/
+        squares("b", n = {1.,0,0.}, alpha=rot.x0, min=strat(0.), max=strat(L0));
+    }
 
     /** Save file with certain fps*/
     char nameVid1[80];
     snprintf(nameVid1, 80, "ppm2mp4 -r %g ./%s/visual_3d.mp4", 1./out.dtVisual, out.dir);
-    //save("ppm2mp4 -r 5 ./results/visual_3d.mp4");
     save(nameVid1);
 }
 

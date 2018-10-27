@@ -19,8 +19,8 @@ void init_physics(){
 	u.r[bottom] = neumann(0.);
 	u.t[top] = dirichlet(def.ugeo);
 	u.r[top] = dirichlet(def.vgeo);
-	b[bottom] = dirichlet(0.);
-	b[top] = neumann(strat(y));
+	b[bottom] = neumann(0.);
+	b[top] = dirichlet(strat(y));
 
 	def.ugeo = 0.;
 	def.vgeo = 0.;

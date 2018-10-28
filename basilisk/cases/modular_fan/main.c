@@ -1,3 +1,8 @@
+#include <math.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
 #include "grid/octree.h" // For 3D
 #include "view.h"
 #include "navier-stokes/centered.h"
@@ -8,13 +13,15 @@
 int minlevel, maxlevel;         // Grid depths
 double meps, eps;		// Maximum error and error in u fields
 
+char sim_ID[] = "single";
+
 #include "physics.h"
 #include "fan.h"
 #include "diagnostics.h"
 
 /* Initialisation */
 int main() {
-	
+	for (maxlevel = 6; maxlevel < 9; maxlevel++){
     	init_grid(2<<5);
    	L0 = 50.;
    	X0 = Y0 = Z0 = 0.;
@@ -30,13 +37,16 @@ int main() {
 	b.gradient = minmod2; // Flux limiter 
 
   	minlevel = 3; 
-  	maxlevel = 8;
+  	//maxlevel = 8;
   	meps = 10.;
 	DT = 10E-5;
         TOLERANCE=10E-6;
 	CFL = 0.5;
-
+	
+	sim_dir_create();
+	out.sim_i++;
     	run();
+	}
 }
 
 /* Initialisation */
@@ -59,6 +69,10 @@ event adapt(i++) {
 }
 
 /* Progress event */
-event end(t+=2.; t <=65.) {
+event progress(t+=2.) {
 	fprintf(stderr, "i=%d t=%g p=%d u=%d b=%d \n", i, t, mgp.i, mgu.i, mgb.i);
+}
+
+event end(t=2){
+    //main();
 }

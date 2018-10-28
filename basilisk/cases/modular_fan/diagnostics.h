@@ -24,7 +24,11 @@ struct sOutput {
 	double dtSlices;
 	double dtProfile;
 	double startBave;
-	char dir[12];
+	char main_dir[12];
+	char dir[20];
+	char dir_profiles[50];
+	char dir_slices[50];
+	int sim_i;
 };
 
 struct sbViewSettings {
@@ -35,8 +39,9 @@ struct sbViewSettings {
 
 };
 
+
 /** Initialize structures */
-struct sOutput out = {.dtVisual=0.2, .dtSlices=10., .dtProfile=1., .startBave=20., .dir="results"};
+struct sOutput out = {.dtVisual=0.2, .dtSlices=10., .dtProfile=1., .startBave=20., .main_dir="results", .sim_i=0};
 struct sbViewSettings bvsets = {.phi=0., .theta=0., .sphi=0., .stheta=0.};
 
 event init(i = 0){
@@ -49,7 +54,7 @@ event init(i = 0){
 /** Profiles for the buoyancy */
 event profiles(t += out.dtProfile) {
 	char nameProf[80];
-	snprintf(nameProf, 80, "./%s/profiles/t=%05g", out.dir, t);
+	snprintf(nameProf, 80, "./%s/t=%05g", out.dir_profiles, t);
 	profile(list = {b, Ri, bdiff}, fname = nameProf);
 }
 
@@ -181,3 +186,29 @@ event slices(t+=out.dtSlices) {
 }
 
 #endif
+
+
+void sim_dir_create(){
+    if (pid() == 0){
+    struct stat st = {0};
+   
+    sprintf(out.dir, "./%s/%s%02d", out.main_dir, sim_ID, out.sim_i);
+    sprintf(out.dir_profiles, "%s/profiles/", out.dir);
+    sprintf(out.dir_slices, "%s/slices/", out.dir);
+ 
+    if (stat(out.main_dir, &st) == -1) {
+        mkdir(out.main_dir, 0777);
+    }
+   
+    if (stat(out.dir, &st) == -1) {
+        mkdir(out.dir, 0777);
+    }
+    if (stat(out.dir_slices, &st) == -1) {
+        mkdir(out.dir_slices, 0777);
+    }
+    if (stat(out.dir_profiles, &st) == -1) {
+        mkdir(out.dir_profiles, 0777);
+    }        
+    }
+}
+

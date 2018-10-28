@@ -21,7 +21,7 @@ char sim_ID[] = "single";
 
 /* Initialisation */
 int main() {
-	for (maxlevel = 6; maxlevel < 9; maxlevel++){
+	for (maxlevel = 8; maxlevel < 9; maxlevel++){
     	init_grid(2<<5);
    	L0 = 50.;
    	X0 = Y0 = Z0 = 0.;
@@ -55,7 +55,7 @@ event init(t = 0){
 	init_rotor();
 	fan.prolongation=fraction_refine;
 	refine (fan[] > 0. && level < maxlevel);
-	eps = min(meps, 0.1*rot.cu);
+	eps = min(meps, 0.07*rot.cu);
 }
 
 event init_change(i=10){
@@ -74,5 +74,4 @@ event progress(t+=2.) {
 }
 
 event end(t=2){
-    //main();
 }

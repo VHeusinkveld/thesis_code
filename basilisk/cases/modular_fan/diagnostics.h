@@ -41,7 +41,7 @@ struct sbViewSettings {
 
 
 /** Initialize structures */
-struct sOutput out = {.dtVisual=0.2, .dtSlices=10., .dtProfile=1., .startBave=20., .main_dir="results", .sim_i=0};
+struct sOutput out = {.dtVisual=0.2, .dtSlices=1., .dtProfile=1., .startBave=20., .main_dir="results", .sim_i=0};
 struct sbViewSettings bvsets = {.phi=0., .theta=0., .sphi=0., .stheta=0.};
 
 event init(i = 0){
@@ -52,10 +52,10 @@ event init(i = 0){
 }
 
 /** Profiles for the buoyancy */
-event profiles(t += out.dtProfile) {
+event field_profiles(t += out.dtProfile) {
 	char nameProf[80];
 	snprintf(nameProf, 80, "./%s/t=%05g", out.dir_profiles, t);
-	profile(list = {b, Ri, bdiff}, fname = nameProf);
+	field_profile(list = {b, Ri, bdiff}, fname = nameProf);
 }
 
 /** Diagnosing: kinetic energy, diagnosed rotor volume, buoyancy energy, ammount of cells used.*/
@@ -183,11 +183,13 @@ event slices(t+=out.dtSlices) {
     double sx=rot.x0, sy=rot.y0, sz=rot.z0;
     bool XY=false, XZ=false, YZ=false;
 
+    output_field(list = {b}, n = 128);
+
 }
 
 #endif
 
-
+/** Checks if folders exists, if not they get created. */
 void sim_dir_create(){
     if (pid() == 0){
     struct stat st = {0};

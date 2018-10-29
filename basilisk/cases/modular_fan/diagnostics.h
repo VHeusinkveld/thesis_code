@@ -1,5 +1,7 @@
 #include "utils.h"
 #include "lambda2.h"
+
+#include "output_slices.h"
 #include "profile5b.h"
 
 /** Define variables and structures to do: diagnostics, ouput data, output movies. */
@@ -13,7 +15,7 @@ struct sDiag {
 	double Ekin;			// Total kinetic energy
 	double EkinOld;			// Track changes in kin energy 
 	double WdoneOld;		// Track changes in work done 
-	double rotVol;			// Diagnosed rotor volume
+	double rotVol;			// Diagnosed rotor volum
 	double bE;			// Buoyancy energy
 	double bEold;			// Track changes in buoyancy energy
 	double diss;			// Diagnose dissipation
@@ -39,10 +41,11 @@ struct sbViewSettings {
 
 };
 
-
 /** Initialize structures */
 struct sOutput out = {.dtVisual=0.2, .dtSlices=1., .dtProfile=1., .startBave=20., .main_dir="results", .sim_i=0};
 struct sbViewSettings bvsets = {.phi=0., .theta=0., .sphi=0., .stheta=0.};
+
+double dissipation(Point point, vector u);
 
 event init(i = 0){
 	bvsets.phi = 0.;
@@ -52,10 +55,10 @@ event init(i = 0){
 }
 
 /** Profiles for the buoyancy */
-event field_profiles(t += out.dtProfile) {
+event profiles(t += out.dtProfile) {
 	char nameProf[80];
 	snprintf(nameProf, 80, "./%s/t=%05g", out.dir_profiles, t);
-	field_profile(list = {b, Ri, bdiff}, fname = nameProf);
+	field_profile({b, Ri, bdiff}, nameProf);
 }
 
 /** Diagnosing: kinetic energy, diagnosed rotor volume, buoyancy energy, ammount of cells used.*/
@@ -64,32 +67,41 @@ event diagnostics (t+=0.2){
 	scalar ekin[]; 		// Kinetic energy
 	double tempVol = 0.;
 	double tempEkin = 0.;
-	double max_vel = 0.;
+	double tempDiss = 0.;
+	double maxVel = 0.;
 	double turbVol = 0.;
 	double bEnergy = 0.;
-	
+		
+
 	foreach(reduction(+:n) reduction(+:tempVol) reduction(+:tempEkin) 
-		reduction(max:max_vel) reduction(+:bEnergy) reduction(+:turbVol)) {
+		reduction(max:maxVel) reduction(+:bEnergy) reduction(+:turbVol)
+        	reduction(+:tempDiss)) {
+
 		tempVol += dv()*fan[];
 		bEnergy += dv()*y*(b[] - strat(y));
 		
 		foreach_dimension() {
 			ekin[] += sq(u.x[]);
 		}
-		max_vel = max(max_vel, sq(ekin[]));
+
+		tempDiss += dissipation(point, u);
+
+		maxVel = max(maxVel, sq(ekin[]));
 		ekin[] *= 0.5*rho[]*dv();	
 		tempEkin += ekin[];
+
 		n++;
-		Ri[] = ((b[0,1]-b[0,-1])/(2*Delta))/(sq((u.x[0,-1]-uf.x[0,1])/(2*Delta)) + sq((uf.z[0,1]-uf.z[0,-1])/(2*Delta)) + 0.000000000001) < 0.25 ? 1. : 0.; 
-		turbVol += dv()*Ri[];
+
+		Ri[] = ((b[0,1]-b[0,-1])/(2*Delta))/(sq((u.x[0,-1]-uf.x[0,1])/(2*Delta)) + sq((uf.z[0,1]-uf.z[0,-1])/(2*Delta)) + 0.000000000001); 
+		turbVol += dv()*(Ri[] < 0.25 ? 1. : 0.);
 	}
-	
+	dia.diss = 1.*tempDiss;
 	dia.bE = 1.*bEnergy;
-	dia.rotVol = 1.*tempVol;
+	rot.diaVol = dia.rotVol = 1.*tempVol;
 	dia.Ekin = 1.*tempEkin;
 	
 	/** Check if fan volume is within one percent of definition */
-	if(fabs(dia.rotVol/rot.V - 1) > 0.01){
+	if(fabs(dia.rotVol/rot.V - 1) > 0.05){
 		fprintf(stderr, "ERROR Check fan volume, V=%g, Vr=%g\n",rot.V, dia.rotVol);
 	}
 	
@@ -107,12 +119,13 @@ event diagnostics (t+=0.2){
 		fprintf(fpca,"inversion\tr\tW\tP\tmaxlvl\tminlvl\teps\n%g\t%g\t%g\t%g\t%d\t%d\t%g\n", 
 				INVERSION, rot.R, rot.W, rot.P, maxlevel, minlevel, eps);
 		
-		fprintf(fpout,"i\tt\tn\tred\tEkin\tWork\tbE\tturbVol\n");
+	        fprintf(stderr,"i\tt\tn\tred\tEkin\tWork\tbE\tturbVol\tdissipation\n");
+		fprintf(fpout,"i\tt\tn\tred\tEkin\tWork\tbE\tturbVol\tdissipation\n");
 	}
-	fprintf(fpout, "%d\t%g\t%d\t%g\t%g\t%g\t%g\t%g\n",
-		i,t,n,(double)((1<<(maxlevel*3))/n),dia.Ekin,rot.Work, dia.bE, turbVol);
+	fprintf(fpout, "%d\t%g\t%d\t%g\t%g\t%g\t%g\t%g\t%g\n",
+		i,t,n,(double)((1<<(maxlevel*3))/n),dia.Ekin,rot.Work, dia.bE, turbVol, dia.diss);
 	
-	fprintf(stderr, "%d\t%g\t%g\t%g\t%g\t%g\n",n,(double)((1<<(maxlevel*3))/n),dia.Ekin,rot.Work,dia.bE,turbVol);
+	fprintf(stderr, "%d\t%g\t%g\t%g\t%g\t%g\t%g\n",n,(double)((1<<(maxlevel*3))/n),dia.Ekin,rot.Work,dia.bE,turbVol,dia.diss);
 
 	dia.EkinOld = 1.*dia.Ekin;
 	dia.WdoneOld = 1.*rot.Work;
@@ -143,7 +156,7 @@ event movies(t += out.dtVisual) {
 event movies(t += out.dtVisual) {
     scalar l2[];
     scalar bfy[];
-
+	
     foreach(){
 	bdiff[] = b[] - strat(y);
 	bfy[] = b[]*u.y[];
@@ -156,7 +169,7 @@ event movies(t += out.dtVisual) {
     boundary({l2, bdiff});
     
     clear();
-    view(fov=25, tx = 0., ty = 0., phi=bvsets.phi, theta=bvsets.theta, width = 1200, height = 1200);
+    view(fov=25, tx = 0., ty = 0., phi=bvsets.phi, theta=bvsets.theta, width = 800, height = 800);
     
     translate(-rot.x0,-rot.y0,-rot.z0) {
         box(notics=false);
@@ -180,14 +193,28 @@ event movies(t += out.dtVisual) {
 
 event slices(t+=out.dtSlices) {
 
-    double sx=rot.x0, sy=rot.y0, sz=rot.z0;
-    bool XY=false, XZ=false, YZ=false;
+    coord slice = {1., 1., 0.};
 
-    output_field(list = {b}, n = 128);
+    slice.y = 1.;
+    slice.z = rot.z0/L0;
+
+    output_slice(list = {b}, n = 128, plane=slice);
 
 }
-
 #endif
+
+double dissipation(Point point, vector u) {
+    
+    double dis = 0.;
+    foreach_dimension() {
+    dis =  sq(((u.x[1] - u.x[-1])/(2*Delta))) +
+ 	   sq(((u.x[0,1] - u.x[0,-1])/(2*Delta))) +
+	   sq(((u.x[0,0,1] - u.x[0,0,-1])/(2*Delta)));
+    }
+    dis *= dv()*Evis[];
+ 
+    return dis;
+}
 
 /** Checks if folders exists, if not they get created. */
 void sim_dir_create(){

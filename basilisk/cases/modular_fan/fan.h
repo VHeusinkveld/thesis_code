@@ -7,6 +7,7 @@ struct sRotor {
 	double rampT;			// Time to start up rotor
 	double P, Prho;			// Power, powerdensity 
 	double R, W, A, V;		// Diameter, Thickness, Area ,Volume
+	double diaVol;
 	double x0, y0, z0;		// Origin of rotor
     	double xt, yt, zt;      // Translation angles
 	double theta, phi;		// Polar and Azimuthal angle 
@@ -120,14 +121,14 @@ void rotor_coord() {
    	fraction(plnd, -rot.nr.x*(x - rot.x0) - rot.nr.y*(y - rot.y0) - rot.nr.z*(z - rot.z0) + rot.W/2.);	
 
 	foreach () {
-    		fan[] = sph[] * plnu[] * plnd[];
+    		fan[] = min(sph[], plnu[] * plnd[]);
    	}
 	boundary({fan});
 }
 
 void rotor_forcing(){
 	double tempW = 0.;
-	double w, wsgn, damp, usgn, utemp;
+	double w, wsgn, damp, usgn, utemp, corrP;
 	foreach(reduction(+:tempW)) {		
 		if(fan[] > 0.) {
 			foreach_dimension() {
@@ -135,7 +136,8 @@ void rotor_forcing(){
 			// Work in respective direction 
 			wsgn = sign(rot.nf.x*u.x[]) + (sign(rot.nf.x*u.x[]) == 0)*sign(rot.nf.x);
 			damp = rot.rampT > t ? t/rot.rampT : 1.;
-			w = wsgn*fan[]*damp*sq(rot.nf.x)*(2./rho[])*(rot.P/rot.V)*dt;
+			corrP = rot.diaVol > 0. ? rot.V/rot.diaVol : 1.;
+			w = wsgn*fan[]*damp*sq(rot.nf.x)*(2./rho[])*(corrP*rot.P/rot.V)*dt;
 			#if dimension == 2
 				tempW += 0.5*rho[]*w*sq(Delta);
 			#elif dimension == 3

@@ -1,22 +1,4 @@
-/**
-# An improved version of the profiling function under `profile5.h`
-This profiling function uses the same profiling strategy as the `void profile()` function presented [here](profil/profil5.h). However, this version of the same function is subjectively more user friendly. Especially since it mimics the user interface of other output functions in Basilisk. Also its behaviour when using MPI and/or 2D grids, is as one may naively expect. 
-
-Main features:  
-
-- Consistent vertical profiles on tree grids, without upsampling.  
-- The required computational effort scales approximately with the number of (leaf) grid cells.  
-- Parrallel MPI compatible and scaleable.
- 
-## input
-The function takes a structure as argument, this faciliates optional arguments.
-
-You may run *full default* by calling `profile(NULL)` to obtain a profile of all scalar fields in the standard output (e.g. your terminal).    
-
-At the cost/price of vertical resolution, the *rf* argument can be used to (linearly) reduce/increase the computional effort this function requires.
-*/
-
-struct prof {
+struct sProf {
   scalar * list; // list of scalar field. The default is `all` 
   char * fname;  // Optional file name 
   double ym;     // lower y coordinate  default is Y0
@@ -25,7 +7,7 @@ struct prof {
   FILE * fp;     // File pointer, if `fname` is not provided. The default is `stdout`
 };
 
-void field_profile(struct prof p){
+void field_profile(struct sProf p){
   /**
      Default values are set in case they are not provided by the user.
   */
@@ -64,9 +46,7 @@ Our favorite worker is tasked with the file writing.
   
   double yp = p.ym;
   double aver[len];
-  /**
-  Here a loop starts that iteratively cycles over different y-coordinates. The vertical-step size is governed by the average grid spacing (at that height) and the reduction factor *rf*. 
-  */
+
   while (yp<=p.h){
     for (int i=0;i<len;i++)
       aver[i]=0.;
@@ -120,7 +100,4 @@ Our favorite worker is tasked with the file writing.
   if (pid()==0)
     fflush(fp);
 }
-/**
-## Example
-[An example](profile5busage.c)
-*/
+

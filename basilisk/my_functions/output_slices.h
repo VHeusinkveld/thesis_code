@@ -28,38 +28,53 @@ The arguments and their default values are:
 : number of points along each dimension. Default is *N*.
 
 *linear*
-: use first-order (default) or bilinear interpolation. */
+: use first-order (default) or bilinear interpolation. 
 
-struct OutputField {
+*plane*
+: define plane 
+*/
+
+struct sOutputSlice {
   scalar * list;
   FILE * fp;
   int n;
   bool linear;
+  coord plane;	
 };
 
 trace
-void output_field (struct OutputField p)
+void output_slice (struct sOutputSlice p)
 {
   if (!p.list) p.list = all;
   if (p.n == 0) p.n = N;
   if (!p.fp) p.fp = stdout;
-  p.n++;
+  if (p.plane.x != 1.) {
+	fprintf(stderr, "Warning: only y or z can be varied. Slices are reset to default");
+	p.plane.x = 1.;
+	p.plane.y = 1.;
+	p.plane.z = 0.;
+  }
+  if (!p.plane.y) p.plane.y = 1.;
+  if (!p.plane.z) p.plane.z = .0;
+p.n++;
   
   int len = list_len(p.list);
   double ** field = (double **) matrix_new (p.n, p.n, len*sizeof(double));
-  
   double Delta = 0.999999*L0/(p.n - 1);
+
   for (int i = 0; i < p.n; i++) {
     double x = Delta*i + X0;
     for (int j = 0; j < p.n; j++) {
-      double y = Delta*j + Y0;
+      double varCoord = Delta*j; 
+      double y = (p.plane.y < 1 ? p.plane.y*L0 : varCoord) + Y0;
+      double z = (p.plane.z < 1 ? p.plane.z*L0 : varCoord) + Z0;
       if (p.linear) {
 	int k = 0;
 	for (scalar s in p.list)
-	  field[i][len*j + k++] = interpolate (s, x, y);
+	  field[i][len*j + k++] = interpolate (s, x, y, z);
       }
       else {
-	Point point = locate (x, y);
+	Point point = locate (x, y, z);
 	int k = 0;
 	for (scalar s in p.list)
 	  field[i][len*j + k++] = point.level >= 0 ? s[] : nodata;
@@ -72,17 +87,19 @@ void output_field (struct OutputField p)
     MPI_Reduce (MPI_IN_PLACE, field[0], len*p.n*p.n, MPI_DOUBLE, MPI_MIN, 0,
 		MPI_COMM_WORLD);
 @endif
-    fprintf (p.fp, "# 1:x 2:y");
-    int i = 3;
+    fprintf (p.fp, "# 1:x 2:y 3:z");
+    int i = 4;
     for (scalar s in p.list)
       fprintf (p.fp, " %d:%s", i++, s.name);
     fputc('\n', p.fp);
     for (int i = 0; i < p.n; i++) {
       double x = Delta*i + X0;
       for (int j = 0; j < p.n; j++) {
-	double y = Delta*j + Y0;
+        double varCoord = Delta*j; 
+        double y = (p.plane.y < 1 ? p.plane.y*L0 : varCoord) + Y0;
+        double z = (p.plane.z < 1 ? p.plane.z*L0 : varCoord) + Z0;
 	//	map (x, y);
-	fprintf (p.fp, "%g %g", x, y);
+	fprintf (p.fp, "%g %g %g", x, y, z);
 	int k = 0;
 	for (scalar s in p.list)
 	  fprintf (p.fp, " %g", field[i][len*j + k++]);

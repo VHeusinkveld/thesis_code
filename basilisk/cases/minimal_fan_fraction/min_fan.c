@@ -4,8 +4,8 @@
 #include "fractions.h"
 
 /** Defining a starting and an ending level, and the global scalar field fan[], since this field is iteratively used to refine where the fan is. */
-int startlevel = 1;
-int endlevel = 7;
+int startlevel = 3;
+int endlevel = 6;
 int ilevel;
 scalar fan[];
 
@@ -30,12 +30,12 @@ int main() {
   	double yf = L0/2.;
   	double zf = L0/2.;
 
-  	double rTheta = M_PI/4.;  
-  	double rPhi = M_PI/4.;
+  	double rTheta = M_PI/2.;  
+  	double rPhi = M_PI/2.;
 	
     	coord fn = {sin(rTheta)*cos(-rPhi + M_PI/2.), sin(rTheta)*sin(-rPhi + M_PI/2.), cos(rTheta)};
 
-	scalar sph[], planeup[], planedown[];
+	scalar sph[], planeup[], planedown[], new[];
 	fan.prolongation = fraction_refine;
 	refine(fan[]>0.000001 && level < ilevel); // Refined where needed, 0.0001 is arbitrarily chosen since otherwise due to truncation errors it will refine the whole domain.
 
@@ -43,7 +43,7 @@ int main() {
     	fraction(planeup, fn.x*(x-xf) + fn.y*(y-yf) + fn.z*(z-zf) + w/2.);
     	fraction(planedown, -fn.x*(x-xf) - fn.y*(y-yf) - fn.z*(z-zf) + w/2.);
     	foreach () {
-      		fan[] = sph[]*planeup[]*planedown[];
+      		fan[] = .5*planedown[]*planeup[]*sph[] + .5*min(planedown[]*planeup[], sph[]);
 	}
 	int nn = 0.;
 	int nc = 0.;
@@ -87,8 +87,12 @@ int main() {
     	fraction(sph, -sq((x - xf)) - sq((y - yf)) - sq((z - zf)) + sq(R));
     	fraction(planeup, fn.x*(x-xf) + fn.y*(y-yf) + fn.z*(z-zf) + w/2.);
     	fraction(planedown, -fn.x*(x-xf) - fn.y*(y-yf) - fn.z*(z-zf) + w/2.);
+	fraction(new, -(-sq((x - xf)) - sq((y - yf)) - sq((z - zf)) + sq(R))*
+    		      (fn.x*(x-xf) + fn.y*(y-yf) + fn.z*(z-zf) + w/2.)*
+ 		      (-fn.x*(x-xf) - fn.y*(y-yf) - fn.z*(z-zf) + w/2.)); 
+
     	foreach () {
-      		fan[] = sph[]*planeup[]*planedown[];
+     		fan[] = 0.5*planedown[]*planeup[]*sph[] + 0.5*min(planedown[]*planeup[], sph[]);
 	}
 	int nn = 0.;
 	int nc = 0.;

@@ -55,7 +55,7 @@ event init(t = 0){
 	init_rotor();
 	fan.prolongation=fraction_refine;
 	refine (fan[] > 0. && level < maxlevel);
-	eps = min(meps, 0.07*rot.cu);
+	eps = min(meps, 0.085*rot.cu);
 }
 
 event init_change(i=10){
@@ -73,5 +73,5 @@ event progress(t+=2.) {
 	fprintf(stderr, "i=%d t=%g p=%d u=%d b=%d \n", i, t, mgp.i, mgu.i, mgb.i);
 }
 
-event end(t=2){
+event end(t=60){
 }

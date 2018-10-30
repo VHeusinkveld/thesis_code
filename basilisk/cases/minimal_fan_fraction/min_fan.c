@@ -2,6 +2,7 @@
 #include "grid/octree.h"
 #include "utils.h"
 #include "fractions.h"
+#include "view.h"
 
 /** Defining a starting and an ending level, and the global scalar field fan[], since this field is iteratively used to refine where the fan is. */
 int startlevel = 3;
@@ -21,7 +22,7 @@ int main() {
   	double L0 = 1.;
   	X0 = Y0 = Z0 = 0.;
  
-  	double R = L0/4.;
+  	double R = L0/4.1;
   	double w = R/5.;
 	
 	VolCalc = 4./3.*M_PI*pow(R, 3.) - 2*M_PI*pow(R-w/2., 2.)/3.*(3*R - (R-w/2.));
@@ -42,9 +43,22 @@ int main() {
     	fraction(sph, -sq((x - xf)) - sq((y - yf)) - sq((z - zf)) + sq(R));
     	fraction(planeup, fn.x*(x-xf) + fn.y*(y-yf) + fn.z*(z-zf) + w/2.);
     	fraction(planedown, -fn.x*(x-xf) - fn.y*(y-yf) - fn.z*(z-zf) + w/2.);
+
+	fraction(new, max(-sq((x - xf)) - sq((y - yf)) - sq((z - zf)) + sq(R), 0.)*
+		      max(fn.x*(x-xf) + fn.y*(y-yf) + fn.z*(z-zf) + w/2., 0.)*
+                      max(-fn.x*(x-xf) - fn.y*(y-yf) - fn.z*(z-zf) + w/2., 0.));
+
+
     	foreach () {
-      		fan[] = .5*planedown[]*planeup[]*sph[] + .5*min(planedown[]*planeup[], sph[]);
+      		fan[] = 1.*new[];//.5*planedown[]*planeup[]*sph[] + .5*min(planedown[]*planeup[], sph[]);
 	}
+
+	clear();
+        view(phi=0.1,theta=0.5);
+        translate(-xf, -yf, -zf){
+        draw_vof("fan");
+        }
+        save("ppm2mp4 -r 1 video.mp4");
 	int nn = 0.;
 	int nc = 0.;
 	foreach (reduction(+:VolEst) reduction(+:nn) reduction(+:nc)) {
@@ -87,12 +101,11 @@ int main() {
     	fraction(sph, -sq((x - xf)) - sq((y - yf)) - sq((z - zf)) + sq(R));
     	fraction(planeup, fn.x*(x-xf) + fn.y*(y-yf) + fn.z*(z-zf) + w/2.);
     	fraction(planedown, -fn.x*(x-xf) - fn.y*(y-yf) - fn.z*(z-zf) + w/2.);
-	fraction(new, -(-sq((x - xf)) - sq((y - yf)) - sq((z - zf)) + sq(R))*
-    		      (fn.x*(x-xf) + fn.y*(y-yf) + fn.z*(z-zf) + w/2.)*
- 		      (-fn.x*(x-xf) - fn.y*(y-yf) - fn.z*(z-zf) + w/2.)); 
-
+	fraction(new, max(-sq((x - xf)) - sq((y - yf)) - sq((z - zf)) + sq(R), 0.)*
+		      max(fn.x*(x-xf) + fn.y*(y-yf) + fn.z*(z-zf) + w/2., 0.)*
+                      max(-fn.x*(x-xf) - fn.y*(y-yf) - fn.z*(z-zf) + w/2., 0.));
     	foreach () {
-     		fan[] = 0.5*planedown[]*planeup[]*sph[] + 0.5*min(planedown[]*planeup[], sph[]);
+     		fan[] = 1.*new[];//0.5*planedown[]*planeup[]*sph[] + 0.5*min(planedown[]*planeup[], sph[]);
 	}
 	int nn = 0.;
 	int nc = 0.;

@@ -22,10 +22,12 @@ struct sDiag {
 };
 
 struct sOutput {
+	double dtDiag;
 	double dtVisual;
 	double dtSlices;
 	double dtProfile;
-	double startBave;
+	double startAve;
+	double dtAve;
 	char main_dir[12];
 	char dir[20];
 	char dir_profiles[50];
@@ -42,7 +44,7 @@ struct sbViewSettings {
 };
 
 /** Initialize structures */
-struct sOutput out = {.dtVisual=0.2, .dtSlices=1., .dtProfile=1., .startBave=20., .main_dir="results", .sim_i=0};
+struct sOutput out = {.dtDiag = 0.2, .dtVisual=0.5, .dtSlices=5., .dtProfile=5., .startAve=0., .dtAve = 30., .main_dir="results", .sim_i=0};
 struct sbViewSettings bvsets = {.phi=0., .theta=0., .sphi=0., .stheta=0.};
 
 double dissipation(Point point, vector u);
@@ -54,15 +56,15 @@ event init(i = 0){
 	bvsets.stheta = 0.;	
 }
 
-/** Profiles for the buoyancy */
+/** Profiles in height */
 event profiles(t += out.dtProfile) {
 	char nameProf[80];
 	snprintf(nameProf, 80, "./%s/t=%05g", out.dir_profiles, t);
-	field_profile({b, Ri, bdiff}, nameProf);
+	field_profile((scalar *){b, Ri, bdiff, u}, nameProf);
 }
 
 /** Diagnosing: kinetic energy, diagnosed rotor volume, buoyancy energy, ammount of cells used.*/
-event diagnostics (t+=0.2){
+event diagnostics (t+=out.dtDiag){
 	int n = 0.;
 	scalar ekin[]; 		// Kinetic energy
 	double tempVol = 0.;
@@ -105,6 +107,7 @@ event diagnostics (t+=0.2){
 		fprintf(stderr, "ERROR Check fan volume, V=%g, Vr=%g\n",rot.V, dia.rotVol);
 	}
 	
+	if (pid() == 0){
 	/** Write away data */ 
 	char nameOut[80];
 	char nameCase[80];
@@ -119,20 +122,25 @@ event diagnostics (t+=0.2){
 		fprintf(fpca,"inversion\tr\tW\tP\tmaxlvl\tminlvl\teps\n%g\t%g\t%g\t%g\t%d\t%d\t%g\n", 
 				INVERSION, rot.R, rot.W, rot.P, maxlevel, minlevel, eps);
 		
-	        fprintf(stderr,"i\tt\tn\tred\tEkin\tWork\tbE\tturbVol\tdissipation\n");
+	        fprintf(stderr,"n\tred\tEkin\tWork\tbE\tturbVol\tdissipation\n");
 		fprintf(fpout,"i\tt\tn\tred\tEkin\tWork\tbE\tturbVol\tdissipation\n");
 	}
 	fprintf(fpout, "%d\t%g\t%d\t%g\t%g\t%g\t%g\t%g\t%g\n",
 		i,t,n,(double)((1<<(maxlevel*3))/n),dia.Ekin,rot.Work, dia.bE, turbVol, dia.diss);
 	
 	fprintf(stderr, "%d\t%g\t%g\t%g\t%g\t%g\t%g\n",n,(double)((1<<(maxlevel*3))/n),dia.Ekin,rot.Work,dia.bE,turbVol,dia.diss);
+	
+	fflush(fpout);
+	fflush(fpca);	
+
+	}
 
 	dia.EkinOld = 1.*dia.Ekin;
 	dia.WdoneOld = 1.*rot.Work;
 	dia.bEold = 1.*dia.bE;
 }
 
-/** Ouputting movies and slices of relevant fields */
+/** Ouputting movies */
 
 #if dimension == 2
 event movies(t += out.dtVisual) {
@@ -160,9 +168,6 @@ event movies(t += out.dtVisual) {
     foreach(){
 	bdiff[] = b[] - strat(y);
 	bfy[] = b[]*u.y[];
-        if(t > out.startBave){
-    	    b_ave[] = (((t-out.startBave)/out.dtVisual)*b_ave[] + b[])/(1. + (t-out.startBave)/out.dtVisual);
-        }
     }
 
     lambda2(u,l2);
@@ -191,14 +196,18 @@ event movies(t += out.dtVisual) {
     save(nameVid1);
 }
 
+/** Relevant field slicse */
 event slices(t+=out.dtSlices) {
+    char nameSlice[85];
+    coord slice = {1., 0., 1.};
 
-    coord slice = {1., 1., 0.};
-
-    slice.y = 1.;
-    slice.z = rot.z0/L0;
-
-    output_slice(list = {b}, n = 128, plane=slice);
+    slice.y = rot.y0/L0;
+    slice.z = 1.;
+   
+    snprintf(nameSlice, 85, "%st=%05g", out.dir_slices, t);
+    FILE * fpsli = fopen(nameSlice, "w");
+    output_slice(list = {b}, fp = fpsli, n = 128, plane=slice);
+    fclose(fpsli);
 
 }
 #endif
@@ -207,24 +216,24 @@ double dissipation(Point point, vector u) {
     
     double dis = 0.;
     foreach_dimension() {
-    dis =  sq(((u.x[1] - u.x[-1])/(2*Delta))) +
- 	   sq(((u.x[0,1] - u.x[0,-1])/(2*Delta))) +
-	   sq(((u.x[0,0,1] - u.x[0,0,-1])/(2*Delta)));
+    dis +=  sq(((u.x[1] - u.x[-1])/(2*Delta))) +
+ 	    sq(((u.x[0,1] - u.x[0,-1])/(2*Delta))) +
+	    sq(((u.x[0,0,1] - u.x[0,0,-1])/(2*Delta)));
     }
     dis *= dv()*Evis[];
  
     return dis;
 }
 
-/** Checks if folders exists, if not they get created. */
+/** Checks if required folders exists, if not they get created. */
 void sim_dir_create(){
-    if (pid() == 0){
-    struct stat st = {0};
    
     sprintf(out.dir, "./%s/%s%02d", out.main_dir, sim_ID, out.sim_i);
     sprintf(out.dir_profiles, "%s/profiles/", out.dir);
     sprintf(out.dir_slices, "%s/slices/", out.dir);
  
+    if (pid() == 0){
+    struct stat st = {0};
     if (stat(out.main_dir, &st) == -1) {
         mkdir(out.main_dir, 0777);
     }

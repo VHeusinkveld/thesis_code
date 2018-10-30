@@ -99,10 +99,10 @@ p.n++;
         double y = (p.plane.y < 1 ? p.plane.y*L0 : varCoord) + Y0;
         double z = (p.plane.z < 1 ? p.plane.z*L0 : varCoord) + Z0;
 	//	map (x, y);
-	fprintf (p.fp, "%g %g %g", x, y, z);
+	fprintf (p.fp, "%g %g %g", (float) x, (float) y, (float) z);
 	int k = 0;
 	for (scalar s in p.list)
-	  fprintf (p.fp, " %g", field[i][len*j + k++]);
+	  fprintf (p.fp, " %g", (float) field[i][len*j + k++]);
 	fputc ('\n', p.fp);
       }
       fputc ('\n', p.fp);

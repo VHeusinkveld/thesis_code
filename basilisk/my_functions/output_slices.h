@@ -55,7 +55,7 @@ void output_slice (struct sOutputSlice p)
 	p.plane.z = 0.;
   }
   if (!p.plane.y) p.plane.y = 1.;
-  if (!p.plane.z) p.plane.z = .0;
+  if (!p.plane.z) p.plane.z = 0.;
 p.n++;
   
   int len = list_len(p.list);

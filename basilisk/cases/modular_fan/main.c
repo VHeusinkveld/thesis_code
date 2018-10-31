@@ -13,7 +13,7 @@
 int minlevel, maxlevel;         // Grid depths
 double meps, eps;		// Maximum error and error in u fields
 
-char sim_ID[] = "single";
+char sim_ID[] = "angles";
 
 #include "physics.h"
 #include "fan.h"
@@ -21,9 +21,9 @@ char sim_ID[] = "single";
 
 /* Initialisation */
 int main() {
-	for (maxlevel = 8; maxlevel < 9; maxlevel++){
+	for(rot.phi = 30.*M_PI/180.; rot.phi >= -90.*M_PI/180.; rot.phi -= 30.*M_PI/180.){
     	init_grid(2<<5);
-   	L0 = 50.;
+   	L0 = 100.;
    	X0 = Y0 = Z0 = 0.;
 	a = av; 
 
@@ -37,7 +37,7 @@ int main() {
 	b.gradient = minmod2; // Flux limiter 
 
   	minlevel = 3; 
-  	//maxlevel = 8;
+  	maxlevel = 8;
   	meps = 10.;
 	DT = 10E-5;
         TOLERANCE=10E-6;
@@ -73,5 +73,5 @@ event progress(t+=2.) {
 	fprintf(stderr, "i=%d t=%g p=%d u=%d b=%d \n", i, t, mgp.i, mgu.i, mgb.i);
 }
 
-event end(t=60){
+event end(t=600){
 }

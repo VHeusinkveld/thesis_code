@@ -29,11 +29,11 @@ void init_rotor() {
     	if(!rot.rampT)
 	    	rot.rampT = 1.;
     	if(!rot.R)
-	    	rot.R = L0/30.;     
+	    	rot.R = L0/80.;     
     	if(!rot.W)
-	    	rot.W = rot.R/4.;    
+	    	rot.W = 0.3;    
     	if(!rot.Prho)                  
-     		rot.Prho = 2.*L0;
+     		rot.Prho = 500.;
    	if(!rot.x0)
     		rot.x0 = L0/2.;
     	if(!rot.y0)
@@ -48,8 +48,7 @@ void init_rotor() {
     	if(!rot.theta)
 	    	rot.theta = M_PI/2.;	// Polar angle
     	if(!rot.phi)
-	    	rot.phi = -10.*M_PI/180.;	   // Azimuthal angle 
-
+	    	rot.phi = 0.*M_PI/180.;	   // Azimuthal angle 
     	if(rot.rotate) {
         	rot.xt = 0;
         	rot.yt = 0;
@@ -63,7 +62,6 @@ void init_rotor() {
         	rot.thetat = 0.;
         	rot.phit = 0.;
     }
-
 	rotor_update();
 }
 

@@ -2,7 +2,7 @@
 #include "lambda2.h"
 
 #include "output_slices.h"
-#include "profile5b.h"
+#include "profile5c.h"
 
 /** Define variables and structures to do: diagnostics, ouput data, output movies. */
 
@@ -29,9 +29,9 @@ struct sOutput {
 	double startAve;
 	double dtAve;
 	char main_dir[12];
-	char dir[20];
-	char dir_profiles[50];
-	char dir_slices[50];
+	char dir[30];
+	char dir_profiles[60];
+	char dir_slices[60];
 	int sim_i;
 };
 
@@ -44,7 +44,7 @@ struct sbViewSettings {
 };
 
 /** Initialize structures */
-struct sOutput out = {.dtDiag = 0.2, .dtVisual=0.5, .dtSlices=5., .dtProfile=5., .startAve=0., .dtAve = 30., .main_dir="results", .sim_i=0};
+struct sOutput out = {.dtDiag = 0.5, .dtVisual=5., .dtSlices=30., .dtProfile=5., .startAve=0., .dtAve = 30., .main_dir="results", .sim_i=0};
 struct sbViewSettings bvsets = {.phi=0., .theta=0., .sphi=0., .stheta=0.};
 
 double dissipation(Point point, vector u);
@@ -58,8 +58,8 @@ event init(i = 0){
 
 /** Profiles in height */
 event profiles(t += out.dtProfile) {
-	char nameProf[80];
-	snprintf(nameProf, 80, "./%s/t=%05g", out.dir_profiles, t);
+	char nameProf[90];
+	snprintf(nameProf, 90, "./%s/t=%05g", out.dir_profiles, t);
 	field_profile((scalar *){b, Ri, bdiff, u}, nameProf);
 }
 
@@ -109,18 +109,16 @@ event diagnostics (t+=out.dtDiag){
 	
 	if (pid() == 0){
 	/** Write away data */ 
-	char nameOut[80];
-	char nameCase[80];
-     	snprintf(nameOut, 80, "./%s/output", out.dir);
-     	snprintf(nameCase, 80, "./%s/case", out.dir);
+	char nameOut[90];
+	char nameCase[90];
+     	snprintf(nameOut, 90, "./%s/output", out.dir);
+     	snprintf(nameCase, 90, "./%s/case", out.dir);
 	static FILE * fpout = fopen(nameOut, "w");
 	static FILE * fpca = fopen(nameCase, "w");
 
 	if(t==0.){
-		fprintf(fpca,"L0\n %g\n",L0);	
-	
-		fprintf(fpca,"inversion\tr\tW\tP\tmaxlvl\tminlvl\teps\n%g\t%g\t%g\t%g\t%d\t%d\t%g\n", 
-				INVERSION, rot.R, rot.W, rot.P, maxlevel, minlevel, eps);
+		fprintf(fpca,"L0\tinversion\txr\tyr\tzr\ttheta\tphi\tr\tW\tP\tmaxlvl\tminlvl\teps\n%g\t%g\t%g\t%g\t%g\t%g\t%g\t%g\t%g\t%g\t%d\t%d\t%g\n", 
+				L0, INVERSION, rot.x0, rot.y0, rot.z0, rot.theta, rot.phi, rot.R, rot.W, rot.P, maxlevel, minlevel, eps);
 		
 	        fprintf(stderr,"n\tred\tEkin\tWork\tbE\tturbVol\tdissipation\n");
 		fprintf(fpout,"i\tt\tn\tred\tEkin\tWork\tbE\tturbVol\tdissipation\n");
@@ -191,22 +189,31 @@ event movies(t += out.dtVisual) {
     }
 
     /** Save file with certain fps*/
-    char nameVid1[80];
-    snprintf(nameVid1, 80, "ppm2mp4 -r %g ./%s/visual_3d.mp4", 1./out.dtVisual, out.dir);
+    char nameVid1[90];
+    snprintf(nameVid1, 90, "ppm2mp4 -r %g ./%s/visual_3d.mp4", 10., out.dir);
     save(nameVid1);
 }
 
 /** Relevant field slicse */
 event slices(t+=out.dtSlices) {
-    char nameSlice[85];
+    char nameSlice[90];
     coord slice = {1., 0., 1.};
 
-    slice.y = rot.y0/L0;
-    slice.z = 1.;
+    for(double yTemp = rot.y0-25.; yTemp<=rot.y0+25.; yTemp+=5.) {
+	slice.y = yTemp/L0;
    
-    snprintf(nameSlice, 85, "%st=%05g", out.dir_slices, t);
+    	snprintf(nameSlice, 90, "%st=%05gy=%03g", out.dir_slices, t, yTemp);
+    	FILE * fpsli = fopen(nameSlice, "w");
+    	output_slice(list = {b}, fp = fpsli, n = 99, plane=slice);
+    	fclose(fpsli);
+    }
+
+    slice.y = 1.;
+    slice.z = rot.z0/L0;
+    	
+    snprintf(nameSlice, 90, "%st=%05gz=%03g", out.dir_slices, t, rot.z0);
     FILE * fpsli = fopen(nameSlice, "w");
-    output_slice(list = {b}, fp = fpsli, n = 128, plane=slice);
+    output_slice(list = {b}, fp = fpsli, n = 99, plane=slice);
     fclose(fpsli);
 
 }

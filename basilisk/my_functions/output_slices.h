@@ -48,12 +48,7 @@ void output_slice (struct sOutputSlice p)
   if (!p.list) p.list = all;
   if (p.n == 0) p.n = N;
   if (!p.fp) p.fp = stdout;
-  if (p.plane.x != 1.) {
-	fprintf(stderr, "Warning: only y or z can be varied. Slices are reset to default");
-	p.plane.x = 1.;
-	p.plane.y = 1.;
-	p.plane.z = 0.;
-  }
+  if (!p.plane.x) p.plane.x = 1.;
   if (!p.plane.y) p.plane.y = 1.;
   if (!p.plane.z) p.plane.z = 0.;
 p.n++;
@@ -63,11 +58,14 @@ p.n++;
   double Delta = 0.999999*L0/(p.n - 1);
 
   for (int i = 0; i < p.n; i++) {
-    double x = Delta*i + X0;
+    double varCoord1 = Delta*i;
+    bool varX = !(p.plane.x < 1.);
+    double x = (!varX ? p.plane.x*L0 : varCoord1) + X0;
+    
     for (int j = 0; j < p.n; j++) {
-      double varCoord = Delta*j; 
-      double y = (p.plane.y < 1 ? p.plane.y*L0 : varCoord) + Y0;
-      double z = (p.plane.z < 1 ? p.plane.z*L0 : varCoord) + Z0;
+      double varCoord2 = Delta*j; 
+      double y = (varX ? (p.plane.y < 1. ? p.plane.y*L0 : varCoord2) : varCoord1) + Y0;
+      double z = (p.plane.z < 1. ? p.plane.z*L0 : varCoord2) + Z0;
       if (p.linear) {
 	int k = 0;
 	for (scalar s in p.list)
@@ -87,22 +85,24 @@ p.n++;
     MPI_Reduce (MPI_IN_PLACE, field[0], len*p.n*p.n, MPI_DOUBLE, MPI_MIN, 0,
 		MPI_COMM_WORLD);
 @endif
-    fprintf (p.fp, "# 1:x 2:y 3:z");
-    int i = 4;
-    for (scalar s in p.list)
-      fprintf (p.fp, " %d:%s", i++, s.name);
+    fprintf (p.fp, "x\t y\t z");
+    for (scalar s in p.list) 
+      fprintf (p.fp, "\t%s", s.name);
     fputc('\n', p.fp);
     for (int i = 0; i < p.n; i++) {
-      double x = Delta*i + X0;
+      double varCoord1 = Delta*i;
+      bool varX = !(p.plane.x < 1.);
+      double x = (!varX ? p.plane.x*L0 : varCoord1) + X0;
+
       for (int j = 0; j < p.n; j++) {
-        double varCoord = Delta*j; 
-        double y = (p.plane.y < 1 ? p.plane.y*L0 : varCoord) + Y0;
-        double z = (p.plane.z < 1 ? p.plane.z*L0 : varCoord) + Z0;
+        double varCoord2 = Delta*j; 
+        double y = (varX ? (p.plane.y < 1. ? p.plane.y*L0 : varCoord2) : varCoord1) + Y0;
+        double z = (p.plane.z < 1. ? p.plane.z*L0 : varCoord2) + Z0;
 	//	map (x, y);
-	fprintf (p.fp, "%g %g %g", (float) x, (float) y, (float) z);
+	fprintf (p.fp, "%g\t %g\t %g", (float) x, (float) y, (float) z);
 	int k = 0;
 	for (scalar s in p.list)
-	  fprintf (p.fp, " %g", (float) field[i][len*j + k++]);
+	  fprintf (p.fp, "\t%g", (float) field[i][len*j + k++]);
 	fputc ('\n', p.fp);
       }
       fputc ('\n', p.fp);

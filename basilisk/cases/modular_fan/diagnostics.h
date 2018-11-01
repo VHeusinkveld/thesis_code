@@ -53,9 +53,8 @@ event init(i = 0){
 	bvsets.phi = 0.;
 	bvsets.theta = -M_PI/6.;
 	bvsets.sphi = 0.;
-	bvsets.stheta = 0.;	
+	bvsets.stheta = 0.;
 }
-
 /** Profiles in height */
 event profiles(t += out.dtProfile) {
 	char nameProf[90];

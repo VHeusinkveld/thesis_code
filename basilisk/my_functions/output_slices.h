@@ -85,7 +85,7 @@ p.n++;
     MPI_Reduce (MPI_IN_PLACE, field[0], len*p.n*p.n, MPI_DOUBLE, MPI_MIN, 0,
 		MPI_COMM_WORLD);
 @endif
-    fprintf (p.fp, "x\t y\t z");
+    fprintf (p.fp, "x\ty\tz");
     for (scalar s in p.list) 
       fprintf (p.fp, "\t%s", s.name);
     fputc('\n', p.fp);
@@ -99,7 +99,7 @@ p.n++;
         double y = (varX ? (p.plane.y < 1. ? p.plane.y*L0 : varCoord2) : varCoord1) + Y0;
         double z = (p.plane.z < 1. ? p.plane.z*L0 : varCoord2) + Z0;
 	//	map (x, y);
-	fprintf (p.fp, "%g\t %g\t %g", (float) x, (float) y, (float) z);
+	fprintf (p.fp, "%g\t%g\t%g", (float) x, (float) y, (float) z);
 	int k = 0;
 	for (scalar s in p.list)
 	  fprintf (p.fp, "\t%g", (float) field[i][len*j + k++]);

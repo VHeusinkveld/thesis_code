@@ -26,6 +26,7 @@ void rotor_forcing();
 
 /* Function returning the sRotor structure */
 void init_rotor() {
+	rot.Work = 0.
     	if(!rot.rampT)
 	    	rot.rampT = 1.;
     	if(!rot.R)

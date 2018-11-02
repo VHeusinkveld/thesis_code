@@ -21,7 +21,7 @@ char sim_ID[] = "angles";
 
 /* Initialisation */
 int main() {
-	for(rot.phi = 30.*M_PI/180.; rot.phi >= -90.*M_PI/180.; rot.phi -= 30.*M_PI/180.){
+	for(rot.phi = 30.*M_PI/180.; rot.phi >= -90.*M_PI/180.; rot.phi -= 15.*M_PI/180.){
     	init_grid(2<<5);
    	L0 = 100.;
    	X0 = Y0 = Z0 = 0.;
@@ -32,6 +32,7 @@ int main() {
 	#if dimension == 3
 		u.z.refine = refine_linear;
 	#endif
+
 	fan.prolongation = fraction_refine;
 	p.refine = p.prolongation = refine_linear;
 	b.gradient = minmod2; // Flux limiter 

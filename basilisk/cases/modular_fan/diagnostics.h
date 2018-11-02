@@ -44,7 +44,7 @@ struct sbViewSettings {
 };
 
 /** Initialize structures */
-struct sOutput out = {.dtDiag = 0.5, .dtVisual=5., .dtSlices=30., .dtProfile=5., .startAve=0., .dtAve = 30., .main_dir="results", .sim_i=0};
+struct sOutput out = {.dtDiag = 0.5, .dtVisual=1., .dtSlices=30., .dtProfile=1., .startAve=0., .dtAve = 30., .main_dir="results", .sim_i=0};
 struct sbViewSettings bvsets = {.phi=0., .theta=0., .sphi=0., .stheta=0.};
 
 double dissipation(Point point, vector u);

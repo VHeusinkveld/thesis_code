@@ -44,19 +44,13 @@ double average_over_yp(scalar * list, double * v, double yp){
   double a = 0;
   int len = list_len(list);
   foreach(reduction(+:a) reduction(+:m)){
-    if ((fabs(y-yp) <= (Delta/2))){
+      if ((fabs(y-yp) <= (Delta/2))){
       m++;
       int k = 0;
-#if dimension==2
-      a += Delta;
+      a += dv()/Delta;
       for (scalar s in list)
-	v[k++] += point.level >= 0 ? interpolate (s, x, yp, z)*Delta : 0;
-#elif dimension==3
-      a += sq(Delta);
-      for (scalar s in list)
-	v[k++] += point.level >= 0 ? interpolate (s, x, yp, z)*sq(Delta) : 0;
-#endif
-    }
+	v[k++] += point.level >= 0 ? interpolate (s, x, yp, z)*dv()/Delta : 0;
+      }
   }
 #if _MPI
   if (pid() != 0){
@@ -93,7 +87,7 @@ void field_profile(struct prof p){
     p.fp = stdout;
   double dzn;
   if (p.n)
-    dzn = (p.h - p.ym) / ((double)p.n - 0.9999999);
+    dzn = (p.h - p.ym) / ((double)p.n - 0.999999);
   int len = list_len(p.list);
   boundary(p.list);
   FILE * fp = p.fp;
@@ -123,7 +117,7 @@ void field_profile(struct prof p){
   while (yp <= p.h){
     double aver[len];
     memset(&aver, 0, sizeof(aver)); 
-    double dz = average_over_yp(p.list, aver, yp);
+    double dz = 0.999999*average_over_yp(p.list, aver, yp);
     if (pid() == 0){
       int k = 0;
       for (scalar s in p.list){

@@ -1,6 +1,6 @@
 #include "SGS.h"
 #define INVERSION .5 				// Kelvin per meter
-#define strat(s) 9.81*(INVERSION + 1.004/9.81)*s/273.
+#define strat(s) 9.81*(INVERSION + 1.004/9.81/9.81)*s/273.
 
 double crho = 1.;
 scalar b[];		

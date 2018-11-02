@@ -44,7 +44,7 @@ struct sbViewSettings {
 };
 
 /** Initialize structures */
-struct sOutput out = {.dtDiag = 0.5, .dtVisual=1., .dtSlices=30., .dtProfile=1., .startAve=0., .dtAve = 30., .main_dir="results", .sim_i=0};
+struct sOutput out = {.dtDiag = 0.5, .dtVisual=10., .dtSlices=5., .dtProfile=5., .startAve=0., .dtAve = 30., .main_dir="results", .sim_i=0};
 struct sbViewSettings bvsets = {.phi=0., .theta=0., .sphi=0., .stheta=0.};
 
 double dissipation(Point point, vector u);
@@ -59,7 +59,7 @@ event init(i = 0){
 event profiles(t += out.dtProfile) {
 	char nameProf[90];
 	snprintf(nameProf, 90, "./%s/t=%05g", out.dir_profiles, t);
-	field_profile((scalar *){b, Ri, bdiff, u}, nameProf);
+	field_profile((scalar *){b, bdiff, u, Ri}, nameProf);
 }
 
 /** Diagnosing: kinetic energy, diagnosed rotor volume, buoyancy energy, ammount of cells used.*/

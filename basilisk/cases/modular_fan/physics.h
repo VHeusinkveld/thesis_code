@@ -1,5 +1,5 @@
 #include "SGS.h"
-#define INVERSION .5 				// Kelvin per meter
+#define INVERSION .1 				// Kelvin per meter
 #define strat(s) 9.81*(INVERSION + 1.004/9.81/9.81)*s/273.
 
 double crho = 1.;
@@ -15,12 +15,15 @@ struct sCase {
 };
 
 void init_physics(){
-	u.t[bottom] = neumann(0.);
-	u.r[bottom] = neumann(0.);
+        u.n[bottom] = dirichlet(0.);
+	u.t[bottom] = dirichlet(0.);
+	u.r[bottom] = dirichlet(0.);
+	u.n[top] = dirichlet(0.);
 	u.t[top] = dirichlet(def.ugeo);
 	u.r[top] = dirichlet(def.vgeo);
-	b[bottom] = dirichlet(strat(y));
-	b[top] = dirichlet(strat(y));
+
+	b[bottom] = neumann(0.);
+	b[top] = neumann(0.);
 
 	def.ugeo = 0.;
 	def.vgeo = 0.;

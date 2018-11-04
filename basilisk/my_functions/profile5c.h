@@ -43,7 +43,12 @@ double average_over_yp(scalar * list, double * v, double yp){
   int m = 0;
   double a = 0;
   int len = list_len(list);
+
+#if _OPENMP
+  foreach_leaf(){
+#else
   foreach(reduction(+:a) reduction(+:m)){
+#endif
       if ((fabs(y-yp) <= (Delta/2))){
       m++;
       int k = 0;

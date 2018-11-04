@@ -56,7 +56,7 @@ event init(t = 0){
 	init_rotor();
 	fan.prolongation=fraction_refine;
 	refine (fan[] > 0. && level < maxlevel);
-	eps = min(meps, resFactor*rot.cu);
+	eps = min(meps, 0.07*rot.cu);
 }
 
 event init_change(i=10){

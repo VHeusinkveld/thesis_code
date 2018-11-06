@@ -15,6 +15,7 @@ Main features:
 - Consistent vertical profiles on tree grids, without upsampling.  
 - The required computational effort scales approximately with the number of (leaf) grid cells.  
 - Parrallel MPI compatible and scaleable.
+- Also openMP compatible but is not parallelized.
  
 ## input
 
@@ -32,7 +33,7 @@ function requires.
 struct prof {
   scalar * list; // list of scalar field. The default is `all` 
   char * fname;  // Optional file name 
-  double ym;     // lower y coordinate  default is the first "model level"
+  double ym;     // lower y coordinate  default is Y0"
   double h;      // upper y coordinate. Default is Y0+L0
   double rf;     // reduction factor of query heights. Default is 1
   FILE * fp;     // File pointer, if `fname` is not provided. The default is `stdout`
@@ -42,22 +43,25 @@ struct prof {
 double average_over_yp(scalar * list, double * v, double yp){
   int m = 0;
   double a = 0;
-  int len = list_len(list);
-
 #if _OPENMP
-  foreach_leaf(){
+  foreach_leaf()
 #else
-  foreach(reduction(+:a) reduction(+:m)){
+  foreach(reduction(+:a) reduction(+:m))
 #endif
+    {
       if ((fabs(y-yp) <= (Delta/2))){
-      m++;
-      int k = 0;
-      a += dv()/Delta;
-      for (scalar s in list)
-	v[k++] += point.level >= 0 ? interpolate (s, x, yp, z)*dv()/Delta : 0;
+	m++;
+	double b = 1./Delta;
+	foreach_dimension()
+	  b *= Delta;
+	a += b;
+	int k = 0;
+	for (scalar s in list)
+	  v[k++] += point.level >= 0 ? interpolate (s, x, yp, z)*b : 0;
       }
-  }
+    }
 #if _MPI
+  int len = list_len(list);
   if (pid() != 0){
     MPI_Reduce (&v[0], NULL, len, MPI_DOUBLE, MPI_SUM, 0,
 		MPI_COMM_WORLD);
@@ -69,9 +73,9 @@ double average_over_yp(scalar * list, double * v, double yp){
   int g = 0;
   for (scalar s in list)
     v[g++] /= a;
-#if dimension == 2
+#if (dimension == 2)
   return a/(double)m;
-#elif dimension == 3
+#else
   return sqrt(a/(double)m);
 #endif
 }
@@ -83,16 +87,16 @@ void field_profile(struct prof p){
   if(!p.list)
     p.list = all;
   if (!p.ym) 
-    p.ym = Y0;
+    p.ym = Y0 + (L0 / (double)(1 << (depth() + 1)));
   if (!p.h)
-    p.h = Y0+L0;
+    p.h = Y0 + L0 - (L0 / (double)(1 << (depth() + 1)));
   if (!p.rf)
     p.rf = 1;
   if (!p.fname && !p.fp)
     p.fp = stdout;
   double dzn;
   if (p.n)
-    dzn = (p.h - p.ym) / ((double)p.n - 0.999999);
+    dzn = (p.h - p.ym) / ((double)p.n - 0.99999999);
   int len = list_len(p.list);
   boundary(p.list);
   FILE * fp = p.fp;
@@ -116,13 +120,12 @@ void field_profile(struct prof p){
   }
   double yp = p.ym;
   /**
-     Here a loop starts that iteratively cycles over different y-coordinates. The vertical-step size is governed by the average grid spacing (at that height) and the reduction factor *rf*, unless `n` is passed by the user. 
+     Here a loop starts that iteratively cycles over different y-coordinates. The vertical-step size is governed by the average grid spacing (at that height) and the reduction factor *rf*. 
   */
-  int m = 1;
   while (yp <= p.h){
     double aver[len];
     memset(&aver, 0, sizeof(aver)); 
-    double dz = 0.999999*average_over_yp(p.list, aver, yp);
+    double dz = average_over_yp(p.list, aver, yp);
     if (pid() == 0){
       int k = 0;
       for (scalar s in p.list){
@@ -141,9 +144,10 @@ void field_profile(struct prof p){
   }
   if (pid()==0){
     fflush(fp);
-    if (fp != stdout) // Not close stdout
+    if (fp != stdout)
       fclose(fp);
   }
 }
+
 
 

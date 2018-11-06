@@ -1,14 +1,15 @@
 #include "utils.h"
-#include "lambda2.h"
-
+#if dimension == 3
+	#include "lambda2.h"
+#endif
 #include "output_slices.h"
 #include "profile5c.h"
 
 /** Define variables and structures to do: diagnostics, ouput data, output movies. */
 
 scalar b_ave[];				// Averaged buoyancy field
-scalar Ri[];
-scalar bdiff[];
+scalar Ri[];				// Gradient richardson field
+scalar bdiff[]; 			// Bouyancy difference field 
 struct sDiag dia; 			// Diagnostics
 
 struct sDiag {
@@ -37,9 +38,9 @@ struct sOutput {
 
 struct sbViewSettings {
 	double phi; 			// Phi for 3D bview movie
-	double theta;
-	double sphi;
-	double stheta;			// Theta for sliced image
+	double theta;			// Theta for 3D bview movie
+	double sphi; 			// Polar angle for sliced image RED
+	double stheta;			// Azimuthal angle for sliced image RED
 
 };
 
@@ -55,25 +56,19 @@ event init(i = 0){
 	bvsets.sphi = 0.;
 	bvsets.stheta = 0.;
 }
-/** Profiles in height */
-event profiles(t += out.dtProfile) {
-	char nameProf[90];
-	snprintf(nameProf, 90, "./%s/t=%05g", out.dir_profiles, t);
-	field_profile((scalar *){b, bdiff, u, Ri}, nameProf);
-}
 
 /** Diagnosing: kinetic energy, diagnosed rotor volume, buoyancy energy, ammount of cells used.*/
 event diagnostics (t+=out.dtDiag){
 	int n = 0.;
-	scalar ekin[]; 		// Kinetic energy
-	double tempVol = 0.;
-	double tempEkin = 0.;
-	double tempDiss = 0.;
-	double maxVel = 0.;
-	double turbVol = 0.;
-	double bEnergy = 0.;
+	scalar ekin[]; 		// Kinetic energy field 
+	double tempVol = 0.;    // Temp volume 
+	double tempEkin = 0.;   // Temp kinetic energy
+	double tempDiss = 0.;   // Temp dissipation 
+	double maxVel = 0.;     // Maximum velocity in fan
+	double turbVol = 0.;    // Turbulent volume 
+	double bEnergy = 0.;    // Buoyant energy
 		
-
+	/** Loop over cells to get diagnostics */ 
 	foreach(reduction(+:n) reduction(+:tempVol) reduction(+:tempEkin) 
 		reduction(max:maxVel) reduction(+:bEnergy) reduction(+:turbVol)
         	reduction(+:tempDiss)) {
@@ -85,7 +80,7 @@ event diagnostics (t+=out.dtDiag){
 			ekin[] += sq(u.x[]);
 		}
 
-		tempDiss += dissipation(point, u);
+		//tempDiss += dissipation(point, u);
 
 		maxVel = max(maxVel, sq(ekin[]));
 		ekin[] *= 0.5*rho[]*dv();	
@@ -96,6 +91,8 @@ event diagnostics (t+=out.dtDiag){
 		Ri[] = ((b[0,1]-b[0,-1])/(2*Delta))/(sq((u.x[0,-1]-uf.x[0,1])/(2*Delta)) + sq((uf.z[0,1]-uf.z[0,-1])/(2*Delta)) + 0.000000000001); 
 		turbVol += dv()*(Ri[] < 0.25 ? 1. : 0.);
 	}
+
+	/** Assign values to respective global sturcture vars */ 
 	dia.diss = 1.*tempDiss;
 	dia.bE = 1.*bEnergy;
 	rot.diaVol = dia.rotVol = 1.*tempVol;
@@ -107,7 +104,7 @@ event diagnostics (t+=out.dtDiag){
 	}
 	
 	if (pid() == 0){
-	/** Write away data */ 
+	/** Write away simulation data and case setup for main thread */ 
 	char nameOut[90];
 	char nameCase[90];
      	snprintf(nameOut, 90, "./%s/output", out.dir);
@@ -116,16 +113,17 @@ event diagnostics (t+=out.dtDiag){
 	static FILE * fpca = fopen(nameCase, "w");
 
 	if(t==0.){
-		fprintf(fpca,"L0\tinversion\txr\tyr\tzr\ttheta\tphi\tr\tW\tP\tcu\tmaxlvl\tminlvl\teps\n%g\t%g\t%g\t%g\t%g\t%g\t%g\t%g\t%g\t%g\t%g\t%d\t%d\t%g\n", 
-				L0, INVERSION, rot.x0, rot.y0, rot.z0, rot.theta, rot.phi, rot.R, rot.W, rot.P, rot.cu, maxlevel, minlevel, eps);
+		fprintf(fpca,"L0\tinversion\tTref\txr\tyr\tzr\ttheta\tphi\tr\tW\tP\tcu\trampT\tmaxlvl\tminlvl\teps\n");
+		fprintf(fpca, "%g\t%g\t%g\t%g\t%g\t%g\t%g\t%g\t%g\t%g\t%g\t%g\t%g\t%d\t%d\t%g\n", 
+				L0, INVERSION, TREF, rot.x0, rot.y0, rot.z0, rot.theta, rot.phi, rot.R, rot.W, rot.P, rot.cu, rot.rampT, maxlevel, minlevel, eps);
 		
-	        fprintf(stderr,"n\tred\tEkin\tWork\tbE\tturbVol\tdissipation\n");
-		fprintf(fpout,"i\tt\tn\tred\tEkin\tWork\tbE\tturbVol\tdissipation\n");
+	        fprintf(stderr,"n\tred\tEkin\tWork\tbE\tturbVol\n");
+		fprintf(fpout,"i\tt\tn\tred\tEkin\tWork\tbE\tturbVol\n");
 	}
-	fprintf(fpout, "%d\t%g\t%d\t%g\t%g\t%g\t%g\t%g\t%g\n",
-		i,t,n,(double)((1<<(maxlevel*3))/n),dia.Ekin,rot.Work, dia.bE, turbVol, dia.diss);
+	fprintf(fpout, "%d\t%g\t%d\t%g\t%g\t%g\t%g\t%g\n",
+		i,t,n,(double)((1<<(maxlevel*3))/n),dia.Ekin,rot.Work, dia.bE, turbVol);
 	
-	fprintf(stderr, "%d\t%g\t%g\t%g\t%g\t%g\t%g\n",n,(double)((1<<(maxlevel*3))/n),dia.Ekin,rot.Work,dia.bE,turbVol,dia.diss);
+	fprintf(stderr, "%d\t%g\t%g\t%g\t%g\t%g\n",n,(double)((1<<(maxlevel*3))/n),dia.Ekin,rot.Work,dia.bE,turbVol);
 	
 	fflush(fpout);
 	fflush(fpca);	
@@ -137,10 +135,10 @@ event diagnostics (t+=out.dtDiag){
 	dia.bEold = 1.*dia.bE;
 }
 
-/** Ouputting movies */
+/** Ouputting movies in 2- or 3-D*/
 
 #if dimension == 2
-event movies(t += out.dtVisual) {
+event movies(t += 0.5) {
     vertex scalar omega[]; 	// Vorticity
     scalar lev[];	 	// Grid depth
     scalar ekinRho[]; 		// Kinetic energy
@@ -152,7 +150,7 @@ event movies(t += out.dtVisual) {
     }
 
     boundary ({b, lev, omega, ekinRho});
-    output_ppm (b, file = "ppm2mp4 ./results/buoyancy.mp4", n = 1<<maxlevel, linear = true);
+    output_ppm (b, file = "ppm2mp4 ./results/buoyancy.mp4", n = 1<<maxlevel, linear = true, max=strat(L0), min=strat(0.));
     output_ppm (ekinRho, file = "ppm2mp4 ./results/ekin.mp4", n = 1<<maxlevel, min = 0, max = 0.5*sq(rot.cu));
     output_ppm (omega, file = "ppm2mp4 ./results/vort.mp4", n = 1<<maxlevel, linear = true); 
     output_ppm (lev, file = "ppm2mp4 ./results/grid_depth.mp4", n = 1<<maxlevel, min = minlevel, max = maxlevel);
@@ -193,7 +191,7 @@ event movies(t += out.dtVisual) {
     save(nameVid1);
 }
 
-/** Relevant field slicse */
+/** Take relevant field slices and write away */
 event slices(t+=out.dtSlices) {
     char nameSlice[90];
     coord slice = {1., 0., 1.};
@@ -216,8 +214,19 @@ event slices(t+=out.dtSlices) {
     fclose(fpsli);
 
 }
+
+/** Profiles in height */
+event profiles(t += out.dtProfile) {
+	char nameProf[90];
+	snprintf(nameProf, 90, "./%s/t=%05g", out.dir_profiles, t);
+	field_profile((scalar *){b, bdiff, u, Ri}, nameProf);
+}
+
 #endif
 
+/** Usefull functions */ 
+
+/** Dissipation functions, only relevant if doing DNS  
 double dissipation(Point point, vector u) {
     
     double dis = 0.;
@@ -226,10 +235,15 @@ double dissipation(Point point, vector u) {
  	    sq(((u.x[0,1] - u.x[0,-1])/(2*Delta))) +
 	    sq(((u.x[0,0,1] - u.x[0,0,-1])/(2*Delta)));
     }
-    dis *= dv()*Evis[];
- 
+    dis *= dv();
+    #if dimension == 2
+	dis *= mu[];
+    #else 
+	dis *= Evis[];
+    #endif
+
     return dis;
-}
+}*/
 
 /** Checks if required folders exists, if not they get created. */
 void sim_dir_create(){

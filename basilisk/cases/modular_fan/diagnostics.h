@@ -123,7 +123,7 @@ event diagnostics (t+=out.dtDiag){
 	fprintf(fpout, "%d\t%g\t%d\t%g\t%g\t%g\t%g\t%g\n",
 		i,t,n,(double)((1<<(maxlevel*3))/n),dia.Ekin,rot.Work, dia.bE, turbVol);
 	
-	fprintf(stderr, "%d\t%g\t%g\t%g\t%g\t%g\n",n,(double)((1<<(maxlevel*3))/n),dia.Ekin,rot.Work,dia.bE,turbVol);
+	fprintf(stderr, "%d\t%g\t%g\t%g\t%g\t%g\n",n,(double)((1<<(maxlevel*dimension))/n),dia.Ekin,rot.Work,dia.bE,turbVol);
 	
 	fflush(fpout);
 	fflush(fpca);	
@@ -269,4 +269,5 @@ void sim_dir_create(){
     }        
     }
 }
+
 

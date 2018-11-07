@@ -47,8 +47,8 @@ int main() {
 	DT = 10E-5;					// For poisson solver 
         TOLERANCE=10E-6;				// For poisson solver 
 	CFL = 0.5;					// CFL condition
-	
-	sim_dir_create();				// Create relevant dir's
+
+	sim_dir_create();			// Create relevant dir's
 	out.sim_i++;					// Simulation iteration 
     	run();						// Start simulation 
 	}
@@ -60,7 +60,7 @@ event init(t = 0){
 	init_rotor();
 	fan.prolongation=fraction_refine;
 	refine (fan[] > 0. && level < maxlevel);
-	eps = min(meps, 0.07*rot.cu);
+	eps = min(meps, 0.03*rot.cu);
 }
 
 /** Return to standard tolerances and DTs for poisson solver */ 
@@ -80,5 +80,5 @@ event progress(t+=2.) {
 }
 
 /** End the simulation */
-event end(t=30){
+event end(t=120){
 }

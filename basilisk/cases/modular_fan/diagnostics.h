@@ -45,7 +45,7 @@ struct sbViewSettings {
 };
 
 /** Initialize structures */
-struct sOutput out = {.dtDiag = 0.5, .dtVisual=10., .dtSlices=5., .dtProfile=5., .startAve=0., .dtAve = 30., .main_dir="results", .sim_i=0};
+struct sOutput out = {.dtDiag = 0.2, .dtVisual=1, .dtSlices=30., .dtProfile=30., .startAve=0., .dtAve = 30., .main_dir="results", .sim_i=0};
 struct sbViewSettings bvsets = {.phi=0., .theta=0., .sphi=0., .stheta=0.};
 
 double dissipation(Point point, vector u);
@@ -201,7 +201,7 @@ event slices(t+=out.dtSlices) {
    
     	snprintf(nameSlice, 90, "%st=%05gy=%03g", out.dir_slices, t, yTemp);
     	FILE * fpsli = fopen(nameSlice, "w");
-    	output_slice(list = {b}, fp = fpsli, n = 99, plane=slice);
+    	output_slice(list = {b}, fp = fpsli, n = 99, linear = true, plane=slice);
     	fclose(fpsli);
     }
 
@@ -210,7 +210,7 @@ event slices(t+=out.dtSlices) {
     	
     snprintf(nameSlice, 90, "%st=%05gz=%03g", out.dir_slices, t, rot.z0);
     FILE * fpsli = fopen(nameSlice, "w");
-    output_slice(list = {b}, fp = fpsli, n = 99, plane=slice);
+    output_slice(list = {b}, fp = fpsli, n = 99, linear = true, plane=slice);
     fclose(fpsli);
 
 }

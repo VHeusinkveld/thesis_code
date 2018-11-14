@@ -47,16 +47,16 @@ void init_rotor() {
         #endif
         }
     	if(!rot.theta)
-	    	rot.theta = M_PI/2.;		// Polar angle
+	    	rot.theta = 100*M_PI/180.;		// Polar angle
     	if(!rot.phi)
-	    	rot.phi = -10.*M_PI/180.;	// Azimuthal angle 
+	    	rot.phi = 0.*M_PI/180.;		// Azimuthal angle 
 
     	if(rot.rotate) {
         	rot.xt = 0;
         	rot.yt = 0;
         	rot.zt = 0;
-        	rot.thetat = -0.2*M_PI/180.;
-       	 	rot.phit = 0.;
+        	rot.thetat = 0.;
+       	 	rot.phit = -0.2*M_PI/180.;
     	} else {
        		rot.xt = 0;
         	rot.yt = 0;
@@ -93,12 +93,12 @@ event rotate(t+=0.1) {
 void rotor_update() {
    
     	rot.nf.x = sin(rot.theta)*cos(rot.phi);
-	rot.nf.y = sin(rot.theta)*sin(rot.phi);
-	rot.nf.z = cos(rot.theta);
+	rot.nf.z = sin(rot.theta)*sin(rot.phi);
+	rot.nf.y = cos(rot.theta);
 
 	rot.nr.x = sin(rot.theta)*cos(rot.phi);
-   	 rot.nr.y = sin(rot.theta)*sin(rot.phi);
-    	rot.nr.z = cos(rot.theta);
+   	rot.nr.z = sin(rot.theta)*sin(rot.phi);
+    	rot.nr.y = cos(rot.theta);
 
    	#if dimension == 2	
 		rot.A = 2*rot.R*rot.W;

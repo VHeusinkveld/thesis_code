@@ -9,7 +9,8 @@
 
 scalar b_ave[];				// Averaged buoyancy field
 scalar Ri[];				// Gradient richardson field
-scalar bdiff[]; 			// Bouyancy difference field 
+scalar bdiff[]; 			// Bouyancy difference field
+scalar bave[]; 
 struct sDiag dia; 			// Diagnostics
 
 struct sDiag {
@@ -45,7 +46,7 @@ struct sbViewSettings {
 };
 
 /** Initialize structures */
-struct sOutput out = {.dtDiag = 0.2, .dtVisual=1, .dtSlices=30., .dtProfile=30., .startAve=0., .dtAve = 30., .main_dir="results", .sim_i=0};
+struct sOutput out = {.dtDiag = 0.2, .dtVisual=2., .dtSlices=30., .dtProfile=30., .startAve=59., .dtAve = 30., .main_dir="results", .sim_i=0};
 struct sbViewSettings bvsets = {.phi=0., .theta=0., .sphi=0., .stheta=0.};
 
 double dissipation(Point point, vector u);
@@ -55,6 +56,9 @@ event init(i = 0){
 	bvsets.theta = -M_PI/6.;
 	bvsets.sphi = 0.;
 	bvsets.stheta = 0.;
+	foreach(){
+		bave[] = 0.;
+	}
 }
 
 /** Diagnosing: kinetic energy, diagnosed rotor volume, buoyancy energy, ammount of cells used.*/
@@ -87,10 +91,15 @@ event diagnostics (t+=out.dtDiag){
 		tempEkin += ekin[];
 
 		n++;
+		if (t > out.startAve) {
+			bave[] = (out.dtDiag*b[] + ((t-out.startAve)-out.dtDiag)*bave[])/(t-out.startAve);
+		}
 
 		Ri[] = ((b[0,1]-b[0,-1])/(2*Delta))/(sq((u.x[0,-1]-uf.x[0,1])/(2*Delta)) + sq((uf.z[0,1]-uf.z[0,-1])/(2*Delta)) + 0.000000000001); 
 		turbVol += dv()*(Ri[] < 0.25 ? 1. : 0.);
 	}
+	
+	boundary({bave});
 
 	/** Assign values to respective global sturcture vars */ 
 	dia.diss = 1.*tempDiss;
@@ -99,7 +108,7 @@ event diagnostics (t+=out.dtDiag){
 	dia.Ekin = 1.*tempEkin;
 	
 	/** Check if fan volume is within one percent of definition */
-	if(fabs(dia.rotVol/rot.V - 1) > 0.05){
+	if(fabs(dia.rotVol/rot.V - 1) > 0.20){
 		fprintf(stderr, "ERROR Check fan volume, V=%g, Vr=%g\n",rot.V, dia.rotVol);
 	}
 	
@@ -158,15 +167,9 @@ event movies(t += 0.5) {
 #elif dimension == 3
 event movies(t += out.dtVisual) {
     scalar l2[];
-    scalar bfy[];
-	
-    foreach(){
-	bdiff[] = b[] - strat(y);
-	bfy[] = b[]*u.y[];
-    }
 
     lambda2(u,l2);
-    boundary({l2, bdiff});
+    boundary({l2});
     
     clear();
     view(fov=25, tx = 0., ty = 0., phi=bvsets.phi, theta=bvsets.theta, width = 800, height = 800);
@@ -196,21 +199,34 @@ event slices(t+=out.dtSlices) {
     char nameSlice[90];
     coord slice = {1., 0., 1.};
 
-    for(double yTemp = rot.y0-25.; yTemp<=rot.y0+25.; yTemp+=5.) {
+    for(double yTemp = rot.y0-30.; yTemp<=rot.y0+20.; yTemp+=5.) {
 	slice.y = yTemp/L0;
    
     	snprintf(nameSlice, 90, "%st=%05gy=%03g", out.dir_slices, t, yTemp);
     	FILE * fpsli = fopen(nameSlice, "w");
-    	output_slice(list = {b}, fp = fpsli, n = 99, linear = true, plane=slice);
+    	output_slice(list = {bave, b}, fp = fpsli, n = 99, linear = true, plane=slice);
     	fclose(fpsli);
     }
 
+    slice.y = 1.;
+    slice.z = 1.;
+
+    for(double xTemp = rot.x0-10.; xTemp<=rot.x0+25.; xTemp+=5.) {
+	slice.x = xTemp/L0;
+	
+	snprintf(nameSlice, 90, "%st=%05gx=%03g", out.dir_slices, t, xTemp);
+	FILE * fpsli = fopen(nameSlice, "w");
+	output_slice(list = {bave, b}, fp = fpsli, n = 99, linear = true, plane=slice);
+	fclose(fpsli);
+	}
+
+    slice.x = 1.;
     slice.y = 1.;
     slice.z = rot.z0/L0;
     	
     snprintf(nameSlice, 90, "%st=%05gz=%03g", out.dir_slices, t, rot.z0);
     FILE * fpsli = fopen(nameSlice, "w");
-    output_slice(list = {b}, fp = fpsli, n = 99, linear = true, plane=slice);
+    output_slice(list = {b, bave}, fp = fpsli, n = 99, linear = true, plane=slice);
     fclose(fpsli);
 
 }
@@ -219,7 +235,7 @@ event slices(t+=out.dtSlices) {
 event profiles(t += out.dtProfile) {
 	char nameProf[90];
 	snprintf(nameProf, 90, "./%s/t=%05g", out.dir_profiles, t);
-	field_profile((scalar *){b, bdiff, u, Ri}, nameProf);
+	field_profile((scalar *){b, bdiff, u, Ri}, nameProf, n=64);
 }
 
 #endif

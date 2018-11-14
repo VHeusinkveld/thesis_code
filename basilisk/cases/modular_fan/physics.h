@@ -5,9 +5,10 @@
 #define CP 1005.	// C_p for air 
 #define gCONST 9.81	// Gravitational constant
 #define TREF 273.	// Kelvin
-#define INVERSION .1 	// Kelvin per meter
+#define INVERSION .2 	// Kelvin per meter
 
 #define strat(s) gCONST*(INVERSION + gCONST/CP)*s/TREF // Stratification 
+//#define strat(s) gCONST*5.*log(sqrt(s)+1)/TREF
 
 double crho = 1.;
 scalar b[];		
@@ -29,12 +30,12 @@ void init_physics(){
     	
         u.n[bottom] = dirichlet(0.);
 	u.t[bottom] = dirichlet(0.);
-	u.n[top] = dirichlet(0.);
+	u.n[top] = neumann(0.);
 	u.t[top] = dirichlet(def.ugeo);
 
 
-	b[bottom] = neumann(0.);
-	b[top] = neumann(0.);
+	b[bottom] = dirichlet(0.);
+	b[top] = dirichlet(strat(y));
 
 	periodic (left);
 
@@ -42,17 +43,17 @@ void init_physics(){
 		u.r[bottom] = dirichlet(0.);
 		u.r[top] = dirichlet(def.vgeo);
 		
-		Evis[bottom] = dirichlet(0.);
-        	Evis[top] = dirichlet(0.);
+		//Evis[bottom] = dirichlet(0.);
+        	//Evis[top] = dirichlet(0.);
 
 		periodic(front);
 	#endif  
 
 	foreach() {
 		b[] = strat(y);
-		u.x[] = 1.*def.ugeo;
+		u.x[] = 1.*def.ugeo*min(sq(y),1);
 		#if dimension == 3
-			u.z[] = 1.*def.vgeo;
+			u.z[] = 1.*def.vgeo*min(sq(y),1);
 		#endif
 	}
 }

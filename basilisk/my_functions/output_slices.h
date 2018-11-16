@@ -31,7 +31,9 @@ The arguments and their default values are:
 : use first-order (default) or bilinear interpolation. 
 
 *plane*
-: define plane 
+: coord, define plane. Ex: (1, 1, 0.5) --> vary x and y, take z = 0.5*L0 + Z0. 
+	note that the constant plane 1*L0 is not possible, 1's are 
+ 	assumed to be varied.
 */
 
 struct sOutputSlice {

@@ -30,8 +30,8 @@ void init_physics(){
     	
         u.n[bottom] = dirichlet(0.);
 	u.t[bottom] = dirichlet(0.);
-	u.n[top] = neumann(0.);
-	u.t[top] = dirichlet(def.ugeo);
+	u.n[top] = dirichlet(0.);
+	u.t[top] = neumann(0.); //dirichlet(def.ugeo);
 
 
 	b[bottom] = dirichlet(0.);
@@ -41,7 +41,7 @@ void init_physics(){
 
 	#if dimension == 3
 		u.r[bottom] = dirichlet(0.);
-		u.r[top] = dirichlet(def.vgeo);
+		u.r[top] = neumann(0.); //dirichlet(def.vgeo);
 		
 		//Evis[bottom] = dirichlet(0.);
         	//Evis[top] = dirichlet(0.);

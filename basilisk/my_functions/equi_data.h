@@ -21,13 +21,24 @@ void equi_diag (struct sEquiDia p){
         equifield = calloc(len*n*n*n, sizeof(double)); // Init with zeros
     } 	
 
-    double dDelta = 0.9999999*L0/n;  
+    int aa = 0;
+    int bb = 0;
+
+    double dDelta = 0.9999999*L0/(n);  
     int l = 0;  
-    for(scalar s in p.list){
-    foreach_level_or_leaf(diaglevel) {
+    foreach_level_or_leaf(diaglevel-1) {
+        for(scalar s in p.list){
         if(is_leaf(cell)){
-	    double pn = Delta/dDelta;
-	    fprintf(stderr, "%g, %d, %g, %g", pn, (int)pn, Delta, dDelta);
+	    int pn = (int)Delta/dDelta;
+	    for(int ii = 0; ii < pn; ii++){
+		for(int jj = 0; jj < pn; jj++){
+		    for(int kk = 0; kk < pn; kk++){
+			fprintf(stderr, "%d, %d, %d\n", ii, jj, kk);
+			bb++;
+	    	    }
+		}
+	    }
+
         } else {
 	    int ii = (int)((x-dDelta/2)/dDelta);
 	    int jj = (int)((y-dDelta/2)/dDelta);
@@ -36,9 +47,11 @@ void equi_diag (struct sEquiDia p){
 	    int place = ii*n*n + jj*n + kk*len + l;
 	    equifield[place] += s[];
 
+	    aa++;
 	}
+        }
     }
-    }
+    fprintf(stderr, "%d, %d, %d\n", aa, bb, (int)cube(1<<2));
     //int place = i*p.n*p.n + j*p.n + k*len + l;
 
 }

@@ -1,8 +1,9 @@
-int diaglevel = 3;
-double *equifield = NULL;
-
 struct sEquiDia {
     scalar * list;
+    int n;
+    double timestep;
+    double starttime;
+    double t;
 };
 
 struct sEquiOut {
@@ -12,37 +13,37 @@ struct sEquiOut {
 };
 
 
+double *equifield = NULL;
 
 void equi_diag (struct sEquiDia p){  
     int len = list_len(p.list);
-    int n = 1<<diaglevel;
-
     if(!equifield) {
-        equifield = calloc(len*n*n*n, sizeof(double)); // Init with zeros
+        equifield = malloc(len*sizeof(double)*p.n*p.n*p.n);
     } 	
-
-    double dDelta = 0.9999999*L0/n;  
-    int l = 0;  
-    for(scalar s in p.list){
-    foreach_level_or_leaf(diaglevel) {
-        if(is_leaf(cell)){
-	    double pn = Delta/dDelta;
-	    fprintf(stderr, "%g, %d, %g, %g", pn, (int)pn, Delta, dDelta);
-        } else {
-	    int ii = (int)((x-dDelta/2)/dDelta);
-	    int jj = (int)((y-dDelta/2)/dDelta);
-            int kk = (int)((z-dDelta/2)/dDelta);
-
-	    int place = ii*n*n + jj*n + kk*len + l;
-	    equifield[place] += s[];
-
-	}
+    double Delta = 0.9999999*L0/(p.n - 1);    
+   
+    for(int i = 0; i < p.n; i++){
+	double x = i*Delta + X0;
+        for(int j = 0; j < p.n; j++){
+	    double y = j*Delta + Y0;
+            for(int k = 0; k < p.n; k++){
+                double z = k*Delta + Z0;
+		double w1 = (p.t - p.starttime - p.timestep)/(p.t-p.starttime) ;
+	        double w2 = p.timestep/(p.t-p.starttime);
+  		int l = 0;
+                for (scalar s in p.list){
+		    int place = i*p.n*p.n + j*p.n + k*len + l;
+		    if (p.t > p.starttime){
+		        equifield[place] = w1*equifield[place] + w2*interpolate(s, x, y, z);
+		    } else {
+		    	equifield[place] = 0.;
+		    }
+		    l++;
+ 		}
+	    }
+	}    
     }
-    }
-    //int place = i*p.n*p.n + j*p.n + k*len + l;
-
-}
-/*    
+    
     if (pid() == 0) {
 @if _MPI
     MPI_Reduce (MPI_IN_PLACE, equifield, len*p.n*p.n*p.n, MPI_DOUBLE, MPI_MIN, 0, MPI_COMM_WORLD);
@@ -53,7 +54,8 @@ void equi_diag (struct sEquiDia p){
     else // slave
     MPI_Reduce (equifield, NULL, len*p.n*p.n*p.n, MPI_DOUBLE, MPI_MIN, 0, MPI_COMM_WORLD);
 @endif
-
+    
+}
 
 void equi_output (struct sEquiOut p){
    if(pid() == 0){
@@ -74,5 +76,7 @@ void equi_output (struct sEquiOut p){
     }
     fprintf(stderr, "%d\n", ja);
 }
-}*/
+}
+
+
 

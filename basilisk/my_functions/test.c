@@ -1,32 +1,41 @@
 #include "grid/octree.h"
-#include "navier-stokes/centered.h"
-#include "tracer.h"
+#include "run.h"
 #include "equi_data.h" 
 
+int minlevel = 2;
+int maxlevel = 3;
+scalar b;
 
-scalar b[];
-scalar * tracers = {b};
 
-int main(){
-    init_grid(8);
+
+int main(){    
+    DT = 0.1;
+
+    init_grid(1<<minlevel);
     L0 = 100.;
 
     run();	
 }
 
-event init(t=0) {
-    foreach(){
-	u.x[] = 0.;
-	u.y[] = 1;
-        u.z[] = 0.;
- 	b[] = y;
+event update(i++) {
+    dt = dtnext(DT);
+
+    foreach() {
+ 	if(i <= 50){
+    	    b[] = 1.;
+        } else {
+            b[] = 0.;
+        }
     }
 }
 
-event diag(t += 0.5){
-    equi_diag(&b, 8, 0.5, 0, t+0.1);
+event diag(i++){
+    fprintf(stderr, "time=%g\n",t);
+    equi_diag((scalar *){b});
 }
 
-event end(t=50){
-    equi_output(8, equifield);
+event end(i=100){
+    //FILE * fp = fopen("output", "w");
+    //equi_output((scalar *){b}, fp, Ndia);
+    //fclose(fp);
 }

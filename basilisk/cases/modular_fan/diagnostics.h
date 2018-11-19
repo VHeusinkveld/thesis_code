@@ -204,7 +204,7 @@ event slices(t+=out.dtSlices) {
    
     	snprintf(nameSlice, 90, "%st=%05gy=%03g", out.dir_slices, t, yTemp);
     	FILE * fpsli = fopen(nameSlice, "w");
-    	output_slice(list = {bave, b}, fp = fpsli, n = 99, linear = true, plane=slice);
+    	output_slice(list = (scalar *){bave, b}, fp = fpsli, n = 99, linear = true, plane=slice);
     	fclose(fpsli);
     }
 
@@ -216,7 +216,7 @@ event slices(t+=out.dtSlices) {
 	
 	snprintf(nameSlice, 90, "%st=%05gx=%03g", out.dir_slices, t, xTemp);
 	FILE * fpsli = fopen(nameSlice, "w");
-	output_slice(list = {bave, b}, fp = fpsli, n = 99, linear = true, plane=slice);
+	output_slice(list = (scalar *){bave, b}, fp = fpsli, n = 99, linear = true, plane=slice);
 	fclose(fpsli);
 	}
 
@@ -226,7 +226,7 @@ event slices(t+=out.dtSlices) {
     	
     snprintf(nameSlice, 90, "%st=%05gz=%03g", out.dir_slices, t, rot.z0);
     FILE * fpsli = fopen(nameSlice, "w");
-    output_slice(list = {b, bave}, fp = fpsli, n = 99, linear = true, plane=slice);
+    output_slice(list = (scalar *){b, bave}, fp = fpsli, n = 99, linear = true, plane=slice);
     fclose(fpsli);
 
 }

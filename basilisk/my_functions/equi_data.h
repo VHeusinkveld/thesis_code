@@ -1,4 +1,5 @@
 int diaglevel = 3;
+int diagii = 0;
 double *equifield = NULL;
 
 struct sEquiDia {
@@ -8,7 +9,6 @@ struct sEquiDia {
 struct sEquiOut {
     scalar * list;
     FILE * fp;
-    int n;
 };
 
 
@@ -21,38 +21,53 @@ void equi_diag (struct sEquiDia p){
         equifield = calloc(len*n*n*n, sizeof(double)); // Init with zeros
     } 	
 
-    int aa = 0;
-    int bb = 0;
+    double dDelta = 0.9999999*L0/n;  
 
-    double dDelta = 0.9999999*L0/(n);  
-    int l = 0;  
-    foreach_level_or_leaf(diaglevel-1) {
+    restriction(p.list); // make sure that coarse level values exist
+    boundary(p.list); // update boundaries
+
+    foreach_level_or_leaf(diaglevel) {
+   	int l = 0; 
         for(scalar s in p.list){
-        if(is_leaf(cell)){
-	    int pn = (int)Delta/dDelta;
-	    for(int ii = 0; ii < pn; ii++){
-		for(int jj = 0; jj < pn; jj++){
-		    for(int kk = 0; kk < pn; kk++){
-			fprintf(stderr, "%d, %d, %d\n", ii, jj, kk);
-			bb++;
-	    	    }
+  	if(level < diaglevel){
+	    int pn = 1<<(diaglevel-level);
+	    for(int i = 0; i < pn; i++){
+		for(int j = 0; j < pn; j++){
+		    for(int k = 0; k < pn; k++){
+			
+			double ctrans = dDelta/2. - Delta/2.; 
+			double xx = x + ctrans + i*dDelta;
+			double yy = y + ctrans + j*dDelta;
+ 			double zz = z + ctrans + k*dDelta;
+
+		        int ii = round((xx - dDelta/2.)/dDelta);
+	         	int jj = round((yy - dDelta/2.)/dDelta);
+            	  	int kk = round((zz - dDelta/2.)/dDelta);
+
+	    		int place = ii*n*n + jj*n + kk*len + l;
+    	   		//fprintf(stderr, "%g, %g, %g, %g, %g, %g, %g, %g\n", x, y, z, xx, yy, zz, dDelta, Delta);	
+			double temp = interpolate(s, xx, yy, zz);
+ 			equifield[place] += temp;
+			fprintf(stderr, "%g\n", temp);	 
+		    }
 		}
 	    }
 
         } else {
-	    int ii = (int)((x-dDelta/2)/dDelta);
-	    int jj = (int)((y-dDelta/2)/dDelta);
-            int kk = (int)((z-dDelta/2)/dDelta);
+ 
+            int ii = round((x - dDelta/2.)/dDelta);
+       	    int jj = round((y - dDelta/2.)/dDelta);
+     	    int kk = round((z - dDelta/2.)/dDelta);
 
 	    int place = ii*n*n + jj*n + kk*len + l;
+	    fprintf(stderr, "%d, %g, %g, %g, %g\n", level, x, y, z, s[]);
 	    equifield[place] += s[];
-
-	    aa++;
 	}
         }
+	l++;
     }
-    fprintf(stderr, "%d, %d, %d\n", aa, bb, (int)cube(1<<2));
-    //int place = i*p.n*p.n + j*p.n + k*len + l;
+    diagii++;
+    //fprintf(stderr, "%d, %d, %d, %d\n", aa, bb, cc, (int)sq(1<<diaglevel));
 
 }
 /*    
@@ -67,25 +82,34 @@ void equi_diag (struct sEquiDia p){
     MPI_Reduce (equifield, NULL, len*p.n*p.n*p.n, MPI_DOUBLE, MPI_MIN, 0, MPI_COMM_WORLD);
 @endif
 
-
+*/
 void equi_output (struct sEquiOut p){
-   if(pid() == 0){
-   int len = list_len(p.list);
-   int ja = 0.;
-    for(int i = 0; i < p.n; i++){
-        for(int j = 0; j < p.n; j++){
-            for(int k = 0; k < p.n; k++){
+
+    int n = 1<<diaglevel;
+	
+    if(pid() == 0){
+
+@if _MPI
+    MPI_Reduce (MPI_IN_PLACE, equifield, len*n*n*n, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+@endif
+
+        int len = list_len(p.list);
+    for(int i = 0; i < n; i++){
+        for(int j = 0; j < n; j++){
+            for(int k = 0; k < n; k++){
 		int l = 0;
 		for (scalar s in p.list){
-		    int place = i*p.n*p.n + j*p.n + k*len + l;
-		    fprintf(p.fp, "%g\t", equifield[place]);
+		    int place = i*n*n + j*n + k*len + l;
+		    fprintf(p.fp, "%g\t", equifield[place]/diagii);
 		    l++;
-		    ja++;
    		}
 	    }
 	}    
     }
-    fprintf(stderr, "%d\n", ja);
+    }
+@if _MPI
+    else // slave
+    MPI_Reduce (equifield, NULL, len*p.n*p.n*p.n, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+@endif
 }
-}*/
 

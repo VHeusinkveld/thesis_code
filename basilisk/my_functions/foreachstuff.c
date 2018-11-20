@@ -2,10 +2,10 @@
 #include "run.h"
 
 int maxlevel = 3;
-int diaglevel = 5;
+int diaglevel = 3;
 
 int main() {
-    N = 1<<1;
+    N = 1<<2;
     L0 = 10;
 
     DT = 0.1;
@@ -16,7 +16,7 @@ int main() {
 }
 
 event init(i=0) {
-   refine(y < L0/2. && level < maxlevel);
+  refine(y < L0/2. && level < maxlevel);
 }
 
 event update(i++) {

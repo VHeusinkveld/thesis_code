@@ -13,9 +13,10 @@
 /** Global variables */
 int minlevel, maxlevel;         	// Grid depths
 double meps, eps;			// Maximum error and error in u fields
+double TEND = 300.;
 
-char sim_ID[] = "angles";			// Simulation identifier
-char sim_var[] = "angles";  		// Notes if a variable is varied over runs
+char sim_ID[] = "average";		// Simulation identifier
+char sim_var[] = "theta";  		// Notes if a variable is varied over runs
 
 #include "physics.h"			// Physics of the simulation 
 #include "fan.h"			// Include a fan
@@ -23,7 +24,7 @@ char sim_var[] = "angles";  		// Notes if a variable is varied over runs
 
 /** Initialisation */
 int main() {	
-	minlevel = 3;
+	minlevel = 5;
   	maxlevel = 9;
 
    	L0 = 100.;
@@ -32,7 +33,7 @@ int main() {
 	// Possibility to run for variable changes
 	for(rot.theta = 100.*M_PI/180.; rot.theta<=135.*M_PI/180.; rot.theta+=10.*M_PI/180)
 	{
-    	init_grid(2<<(6-1));
+    	init_grid(1<<6);
 	a = av; 
 
 	u.x.refine = refine_linear; 			// Momentum conserved 
@@ -78,18 +79,14 @@ event adapt(i++) {
 }
 
 /** Progress event */
-event progress(t+=2.) {
+event progress(t+=5.) {
 	fprintf(stderr, "i=%d t=%g p=%d u=%d b=%d \n", i, t, mgp.i, mgu.i, mgb.i);
 }
 
-event dumpfields(t=30; t+=30) {
-	char dumpFile[90];
-	snprintf(dumpFile, 90, "%s/dump", out.dir);
-	FILE * fpdump = fopen(dumpFile, "w");
-	dump(list = all, fp = fpdump);
-	fclose(fpdump);
+event dumpfields(t=60; t+=60) {
+	dump(file = "restart", list = all);
 }
 
 /** End the simulation */
-event end(t=300.){
+event end(t=TEND){
 }

@@ -4,13 +4,10 @@
 #endif
 #include "output_slices.h"
 #include "profile5c.h"
+#include "equi_data.h"
 
 /** Define variables and structures to do: diagnostics, ouput data, output movies. */
 
-scalar b_ave[];				// Averaged buoyancy field
-scalar Ri[];				// Gradient richardson field
-scalar bdiff[]; 			// Bouyancy difference field
-scalar bave[]; 
 struct sDiag dia; 			// Diagnostics
 
 struct sDiag {
@@ -21,6 +18,14 @@ struct sDiag {
 	double bE;			// Buoyancy energy
 	double bEold;			// Track changes in buoyancy energy
 	double diss;			// Diagnose dissipation
+};
+
+struct sEquiDiag {
+    int level;			// Level for which diagnostics should be done
+    int ii; 			// Keep track of how many additions are done
+    double dtDiag;
+    double startDiag;
+    double endDiag;
 };
 
 struct sOutput {
@@ -46,19 +51,17 @@ struct sbViewSettings {
 };
 
 /** Initialize structures */
-struct sOutput out = {.dtDiag = 0.2, .dtVisual=2., .dtSlices=30., .dtProfile=30., .startAve=59., .dtAve = 30., .main_dir="results", .sim_i=0};
-struct sbViewSettings bvsets = {.phi=0., .theta=0., .sphi=0., .stheta=0.};
+struct sOutput out = {.dtDiag = 1., .dtVisual=2., .dtSlices=1000000., .dtProfile=30., .main_dir="results", .sim_i=0};
 
-double dissipation(Point point, vector u);
+struct sEquiDiag ediag = {.level = 6, .ii = 0, .startDiag = 60., .dtDiag = 2.};
+
+struct sbViewSettings bvsets = {.phi=0., .theta=0., .sphi=0., .stheta=0.};
 
 event init(i = 0){
 	bvsets.phi = 0.;
 	bvsets.theta = -M_PI/6.;
 	bvsets.sphi = 0.;
 	bvsets.stheta = 0.;
-	foreach(){
-		bave[] = 0.;
-	}
 }
 
 /** Diagnosing: kinetic energy, diagnosed rotor volume, buoyancy energy, ammount of cells used.*/
@@ -69,13 +72,11 @@ event diagnostics (t+=out.dtDiag){
 	double tempEkin = 0.;   // Temp kinetic energy
 	double tempDiss = 0.;   // Temp dissipation 
 	double maxVel = 0.;     // Maximum velocity in fan
-	double turbVol = 0.;    // Turbulent volume 
 	double bEnergy = 0.;    // Buoyant energy
 		
 	/** Loop over cells to get diagnostics */ 
 	foreach(reduction(+:n) reduction(+:tempVol) reduction(+:tempEkin) 
-		reduction(max:maxVel) reduction(+:bEnergy) reduction(+:turbVol)
-        	reduction(+:tempDiss)) {
+		reduction(max:maxVel) reduction(+:bEnergy) reduction(+:tempDiss)) {
 
 		tempVol += dv()*fan[];
 		bEnergy += dv()*y*(b[] - strat(y));
@@ -83,24 +84,11 @@ event diagnostics (t+=out.dtDiag){
 		foreach_dimension() {
 			ekin[] += sq(u.x[]);
 		}
-
-		//tempDiss += dissipation(point, u);
-
 		maxVel = max(maxVel, sq(ekin[]));
 		ekin[] *= 0.5*rho[]*dv();	
 		tempEkin += ekin[];
-
 		n++;
-		if (t > out.startAve) {
-			bave[] = (out.dtDiag*b[] + ((t-out.startAve)-out.dtDiag)*bave[])/(t-out.startAve);
-		}
-
-		Ri[] = ((b[0,1]-b[0,-1])/(2*Delta))/(sq((u.x[0,-1]-uf.x[0,1])/(2*Delta)) + sq((uf.z[0,1]-uf.z[0,-1])/(2*Delta)) + 0.000000000001); 
-		turbVol += dv()*(Ri[] < 0.25 ? 1. : 0.);
 	}
-	
-	boundary({bave});
-
 	/** Assign values to respective global sturcture vars */ 
 	dia.diss = 1.*tempDiss;
 	dia.bE = 1.*bEnergy;
@@ -126,13 +114,13 @@ event diagnostics (t+=out.dtDiag){
 		fprintf(fpca, "%g\t%g\t%g\t%g\t%g\t%g\t%g\t%g\t%g\t%g\t%g\t%g\t%g\t%d\t%d\t%g\n", 
 				L0, INVERSION, TREF, rot.x0, rot.y0, rot.z0, rot.theta, rot.phi, rot.R, rot.W, rot.P, rot.cu, rot.rampT, maxlevel, minlevel, eps);
 		
-	        fprintf(stderr,"n\tred\tEkin\tWork\tbE\tturbVol\n");
-		fprintf(fpout,"i\tt\tn\tred\tEkin\tWork\tbE\tturbVol\n");
+	        fprintf(stderr,"n\tred\tEkin\tWork\tbE\n");
+		fprintf(fpout,"i\tt\tn\tred\tEkin\tWork\tbE\n");
 	}
-	fprintf(fpout, "%d\t%g\t%d\t%g\t%g\t%g\t%g\t%g\n",
-		i,t,n,(double)((1<<(maxlevel*3))/n),dia.Ekin,rot.Work, dia.bE, turbVol);
+	fprintf(fpout, "%d\t%g\t%d\t%g\t%g\t%g\t%g\n",
+		i,t,n,(double)((1<<(maxlevel*3))/n),dia.Ekin,rot.Work, dia.bE);
 	
-	fprintf(stderr, "%d\t%g\t%g\t%g\t%g\t%g\n",n,(double)((1<<(maxlevel*dimension))/n),dia.Ekin,rot.Work,dia.bE,turbVol);
+	fprintf(stderr, "%d\t%g\t%g\t%g\t%g\n",n,(double)((1<<(maxlevel*dimension))/n),dia.Ekin,rot.Work,dia.bE);
 	
 	fflush(fpout);
 	fflush(fpca);	
@@ -143,6 +131,29 @@ event diagnostics (t+=out.dtDiag){
 	dia.WdoneOld = 1.*rot.Work;
 	dia.bEold = 1.*dia.bE;
 }
+
+#if dimension == 3
+/** Profiles in height */
+event profiles(t += out.dtProfile) {
+	char nameProf[90];
+	snprintf(nameProf, 90, "./%s/t=%05g", out.dir_profiles, t);
+	field_profile((scalar *){b}, nameProf, n=128);
+}
+
+/** Average in time */
+event equidiags(t = ediag.startDiag; t += ediag.dtDiag) {
+	ediag.ii = equi_diag(b, ediag.level, ediag.ii);
+	fprintf(stderr, "%d\n", ediag.ii);
+}
+event end(TEND){
+    char nameEquif[90];
+    snprintf(nameEquif, 90, "%s/%s", out.dir, "equifield");
+    static FILE * fped = fopen(nameEquif, "w");
+    equi_output(b, fped, ediag.level, ediag.ii);
+    fclose(fped);
+}
+
+#endif
 
 /** Ouputting movies in 2- or 3-D*/
 
@@ -204,7 +215,7 @@ event slices(t+=out.dtSlices) {
    
     	snprintf(nameSlice, 90, "%st=%05gy=%03g", out.dir_slices, t, yTemp);
     	FILE * fpsli = fopen(nameSlice, "w");
-    	output_slice(list = (scalar *){bave, b}, fp = fpsli, n = 99, linear = true, plane=slice);
+    	output_slice(list = (scalar *){b}, fp = fpsli, n = 64, linear = true, plane=slice);
     	fclose(fpsli);
     }
 
@@ -216,7 +227,7 @@ event slices(t+=out.dtSlices) {
 	
 	snprintf(nameSlice, 90, "%st=%05gx=%03g", out.dir_slices, t, xTemp);
 	FILE * fpsli = fopen(nameSlice, "w");
-	output_slice(list = (scalar *){bave, b}, fp = fpsli, n = 99, linear = true, plane=slice);
+	output_slice(list = (scalar *){b}, fp = fpsli, n = 64, linear = true, plane=slice);
 	fclose(fpsli);
 	}
 
@@ -226,40 +237,13 @@ event slices(t+=out.dtSlices) {
     	
     snprintf(nameSlice, 90, "%st=%05gz=%03g", out.dir_slices, t, rot.z0);
     FILE * fpsli = fopen(nameSlice, "w");
-    output_slice(list = (scalar *){b, bave}, fp = fpsli, n = 99, linear = true, plane=slice);
+    output_slice(list = (scalar *){b}, fp = fpsli, n = 64, linear = true, plane=slice);
     fclose(fpsli);
 
 }
-
-/** Profiles in height */
-event profiles(t += out.dtProfile) {
-	char nameProf[90];
-	snprintf(nameProf, 90, "./%s/t=%05g", out.dir_profiles, t);
-	field_profile((scalar *){b, bdiff, u, Ri}, nameProf, n=64);
-}
-
 #endif
 
 /** Usefull functions */ 
-
-/** Dissipation functions, only relevant if doing DNS  
-double dissipation(Point point, vector u) {
-    
-    double dis = 0.;
-    foreach_dimension() {
-    dis +=  sq(((u.x[1] - u.x[-1])/(2*Delta))) +
- 	    sq(((u.x[0,1] - u.x[0,-1])/(2*Delta))) +
-	    sq(((u.x[0,0,1] - u.x[0,0,-1])/(2*Delta)));
-    }
-    dis *= dv();
-    #if dimension == 2
-	dis *= mu[];
-    #else 
-	dis *= Evis[];
-    #endif
-
-    return dis;
-}*/
 
 /** Checks if required folders exists, if not they get created. */
 void sim_dir_create(){

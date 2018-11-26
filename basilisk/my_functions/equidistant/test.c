@@ -14,6 +14,8 @@ double ave_err;
 #include "run.h"
 #include "equi_data.h"  // The functions that are to be tested
 
+int diagii = 0;
+int diaglvl = 3;
 
 int minlevel = 2; 	 
 int maxlevel = 5;
@@ -30,7 +32,6 @@ int main(){
         init_grid(1<<maxlevel);
         
         tau = 1.2;
-	ediag.ii=0;
 
         run();
 	
@@ -42,6 +43,7 @@ int main(){
 	}
 	free(equifield);  // we dont want memory leaks
 	equifield = NULL; // reset the field pointer 
+        diagii=0;
 	pp++;
     }	
 }
@@ -63,13 +65,13 @@ event update(i++) {
 /** Keeping track of the field b (averaging), here we cheat a bit since the error determination is defined in the function itself. */    
 event diag(i++){
     fprintf(stderr, "time=%g\n",t);
-    equi_diag(b); 
+    diagii = equi_diag(b, diaglvl, diagii); 
 }
 
 /** Write away output of the averaging function */
 event end(t=1){
     FILE * fp2 = fopen("output", "w");
-    equi_output(b, fp2);
+    equi_output(b, fp2, diaglvl, diagii);
     fclose(fp2);
 }
 

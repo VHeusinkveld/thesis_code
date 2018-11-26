@@ -13,10 +13,10 @@
 /** Global variables */
 int minlevel, maxlevel;         	// Grid depths
 double meps, eps;			// Maximum error and error in u fields
-double TEND = 300.;
+double TEND = 5.;
 
-char sim_ID[] = "average";		// Simulation identifier
-char sim_var[] = "theta";  		// Notes if a variable is varied over runs
+char sim_ID[] = "power";		// Simulation identifier
+char sim_var[] = "power";  		// Notes if a variable is varied over runs
 
 #include "physics.h"			// Physics of the simulation 
 #include "fan.h"			// Include a fan
@@ -25,13 +25,13 @@ char sim_var[] = "theta";  		// Notes if a variable is varied over runs
 /** Initialisation */
 int main() {	
 	minlevel = 5;
-  	maxlevel = 9;
+  	maxlevel = 8;
 
    	L0 = 100.;
    	X0 = Y0 = Z0 = 0.;
 
 	// Possibility to run for variable changes
-	for(rot.theta = 100.*M_PI/180.; rot.theta<=135.*M_PI/180.; rot.theta+=10.*M_PI/180)
+	for(rot.Prho = L0; rot.Prho < 20*L0; rot.Prho = rot.Prho*2)
 	{
     	init_grid(1<<6);
 	a = av; 
@@ -52,9 +52,13 @@ int main() {
 	CFL = 0.5;					// CFL condition
 
 	sim_dir_create();				// Create relevant dir's
-	out.sim_i++;					// Simulation iteration 
+	out.sim_i++;					// Simulation iteration
+ 
     	run();						// Start simulation 
-	}
+	
+        free(equifield);				// We dont want memory leaks 
+        equifield = NULL;				// Reset equifield pointer
+}
 }
 
 /** Initialisation */

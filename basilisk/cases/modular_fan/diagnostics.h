@@ -53,7 +53,7 @@ struct sbViewSettings {
 /** Initialize structures */
 struct sOutput out = {.dtDiag = 1., .dtVisual=2., .dtSlices=1000000., .dtProfile=30., .main_dir="results", .sim_i=0};
 
-struct sEquiDiag ediag = {.level = 6, .ii = 0, .startDiag = 60., .dtDiag = 2.};
+struct sEquiDiag ediag = {.level = 6, .ii = 0, .startDiag = 2., .dtDiag = 2.};
 
 struct sbViewSettings bvsets = {.phi=0., .theta=0., .sphi=0., .stheta=0.};
 
@@ -145,12 +145,15 @@ event equidiags(t = ediag.startDiag; t += ediag.dtDiag) {
 	ediag.ii = equi_diag(b, ediag.level, ediag.ii);
 	fprintf(stderr, "%d\n", ediag.ii);
 }
+
 event end(TEND){
     char nameEquif[90];
     snprintf(nameEquif, 90, "%s/%s", out.dir, "equifield");
-    static FILE * fped = fopen(nameEquif, "w");
+    FILE * fped = fopen(nameEquif, "w");
     equi_output(b, fped, ediag.level, ediag.ii);
     fclose(fped);
+
+    ediag.ii = 0;
 }
 
 #endif

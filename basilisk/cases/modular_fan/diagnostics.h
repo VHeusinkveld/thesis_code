@@ -51,9 +51,9 @@ struct sbViewSettings {
 };
 
 /** Initialize structures */
-struct sOutput out = {.dtDiag = 1., .dtVisual=2., .dtSlices=1000000., .dtProfile=30., .main_dir="results", .sim_i=0};
+struct sOutput out = {.dtDiag = 1., .dtVisual=2., .dtSlices=120., .dtProfile=30., .main_dir="results", .sim_i=0};
 
-struct sEquiDiag ediag = {.level = 6, .ii = 0, .startDiag = 2., .dtDiag = 2.};
+struct sEquiDiag ediag = {.level = 7, .ii = 0, .startDiag = 1., .dtDiag = 3.};
 
 struct sbViewSettings bvsets = {.phi=0., .theta=0., .sphi=0., .stheta=0.};
 
@@ -137,7 +137,7 @@ event diagnostics (t+=out.dtDiag){
 event profiles(t += out.dtProfile) {
 	char nameProf[90];
 	snprintf(nameProf, 90, "./%s/t=%05g", out.dir_profiles, t);
-	field_profile((scalar *){b}, nameProf, n=128);
+	field_profile((scalar *){b, u}, nameProf, n=128);
 }
 
 /** Average in time */
@@ -147,13 +147,15 @@ event equidiags(t = ediag.startDiag; t += ediag.dtDiag) {
 }
 
 event end(TEND){
-    char nameEquif[90];
-    snprintf(nameEquif, 90, "%s/%s", out.dir, "equifield");
-    FILE * fped = fopen(nameEquif, "w");
-    equi_output(b, fped, ediag.level, ediag.ii);
-    fclose(fped);
+    if(TEND > ediag.startDiag) {
+        char nameEquif[90];
+        snprintf(nameEquif, 90, "%s/%s", out.dir, "equifield");
+        FILE * fped = fopen(nameEquif, "w");
+        equi_output(b, fped, ediag.level, ediag.ii);
+        fclose(fped);
 
-    ediag.ii = 0;
+        ediag.ii = 0;
+    }
 }
 
 #endif

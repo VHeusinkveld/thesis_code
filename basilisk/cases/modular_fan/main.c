@@ -15,8 +15,8 @@ int minlevel, maxlevel;         	// Grid depths
 double meps, eps;			// Maximum error and error in u fields
 double TEND = 5.;
 
-char sim_ID[] = "power";		// Simulation identifier
-char sim_var[] = "power";  		// Notes if a variable is varied over runs
+char sim_ID[] = "rotation";		// Simulation identifier
+char sim_var[] = "theta";  		// Notes if a variable is varied over runs
 
 #include "physics.h"			// Physics of the simulation 
 #include "fan.h"			// Include a fan
@@ -25,15 +25,15 @@ char sim_var[] = "power";  		// Notes if a variable is varied over runs
 /** Initialisation */
 int main() {	
 	minlevel = 5;
-  	maxlevel = 8;
+  	maxlevel = 7;
 
    	L0 = 100.;
    	X0 = Y0 = Z0 = 0.;
 
 	// Possibility to run for variable changes
-	for(rot.Prho = L0; rot.Prho < 20*L0; rot.Prho = rot.Prho*2)
+	for(rot.theta = 100.*M_PI/180.; rot.theta < 121.*M_PI/180.; rot.theta += 10.*M_PI/180.)
 	{
-    	init_grid(1<<6);
+    	init_grid(1<<5);
 	a = av; 
 
 	u.x.refine = refine_linear; 			// Momentum conserved 
@@ -63,7 +63,7 @@ int main() {
 
 /** Initialisation */
 event init(t = 0){
-	rot.rotate = false;
+	rot.rotate = true;
 	init_physics();
 	init_rotor();
 	fan.prolongation=fraction_refine;

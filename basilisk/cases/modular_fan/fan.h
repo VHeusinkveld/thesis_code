@@ -56,7 +56,7 @@ void init_rotor() {
         	rot.yt = 0;
         	rot.zt = 0;
         	rot.thetat = 0.;
-       	 	rot.phit = -0.2*M_PI/180.;
+       	 	rot.phit = -0.3*M_PI/180.;
     	} else {
        		rot.xt = 0;
         	rot.yt = 0;

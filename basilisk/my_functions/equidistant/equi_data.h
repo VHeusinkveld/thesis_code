@@ -87,9 +87,7 @@ void equi_output (scalar s, FILE * fp, int lvl, int diagi){
         for(int j = 0; j < n; j++){
             for(int k = 0; k < n; k++){
 		int place = i*n*n + j*n + k*len;
-		//fprintf(stderr, "before, %d, %d, %d\n", i, j, k);
 		double temp = (equifield[place]/((double)diagi)); // Divide by number of additions
-	        //fprintf(stderr, "after, %d, %d, %d\n", i, j, k);
 	        fprintf(fp, "%g\t", temp);
 	    }
 	}    

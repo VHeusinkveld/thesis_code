@@ -36,6 +36,7 @@ int main() {
     	init_grid(1<<5);
 	a = av; 
 
+        // TODO Implement for each dimension
 	u.x.refine = refine_linear; 			// Momentum conserved 
 	u.y.refine = refine_linear;
 	#if dimension == 3

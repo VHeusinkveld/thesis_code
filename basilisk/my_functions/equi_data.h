@@ -18,7 +18,9 @@ Short description of what they do:
 
 
 TODO implement 2D
-TODO walking average since values in equifield get big, or divide before summing?
+TODO walking average since values in equifield could get big, or divide before summing?
+TODO multiple fields at once? 
+TODO reading in equidistant data? 
 */
 
 double *equifield = NULL; 	// The diagnostics field

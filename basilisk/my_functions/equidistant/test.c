@@ -12,13 +12,13 @@ double ave_err;
 
 #include "grid/octree.h"
 #include "run.h"
-#include "equi_data.h"  // The functions that are to be tested
+#include "equi_databin.h"  // The functions that are to be tested
 
 int diagii = 0;
-int diaglvl = 3;
+int diaglvl = 7;
 
-int minlevel = 2; 	 
-int maxlevel = 5;
+int minlevel = 3; 	 
+int maxlevel = 6;
 scalar b[];
 
 
@@ -28,10 +28,10 @@ int main(){
     DT=0.05;				
     int pp = 0;
 /** Loop over different DT to see if the value converges */
-    for(maxlevel=2; maxlevel<7; maxlevel++){
+    for(maxlevel=6; maxlevel<7; maxlevel++){
         init_grid(1<<maxlevel);
         
-        tau = 1.2;
+        tau = 1E31;
 
         run();
 	
@@ -50,7 +50,7 @@ int main(){
 
 /** Ability to test for non uniform grid */ 
 event init(i=0){
-	//unrefine(y <= L0/4. && level > minlevel-1); 
+	unrefine(y <= L0/4. && level > minlevel-1); 
 }
 
 /** Set values of scalar b based on defined function */
@@ -70,9 +70,20 @@ event diag(i++){
 
 /** Write away output of the averaging function */
 event end(t=1){
-    FILE * fp2 = fopen("output", "w");
-    equi_output(b, fp2, diaglvl, diagii);
-    fclose(fp2);
+    char name[90]; 
+    snprintf(name, 90, "%s", "output");
+    equi_output_binary(b, name, diaglvl, diagii);
+    scalar h[];
+    equi_import_binary(h, name, diaglvl);
+    
+    double differ = 0.;;
+    int differii = 0;;
+    foreach(reduction(+:differ) reduction(+:differii)) {
+	differ += fabs(h[] - b[]); 
+	//printf("%g\n", fabs((h[] - b[])/b[]));
+	differii++;
+    }
+    printf("gem=%g", differ/differii);
 }
 
 /**

@@ -4,18 +4,18 @@ struct sRotor rot;  		// Rotor details structure
 scalar fan[];			// Fan volume fraction
 
 struct sRotor {	
-	double rampT;		// Time to start up rotor
-	double P, Prho;		// Power, powerdensity 
-	double R, W, A, V;	// Diameter, Thickness, Area ,Volume
-	double diaVol;		// Diagnosed rotor volume 
-	double x0, y0, z0;	// Origin of rotor
-    	double xt, yt, zt;      // Translation angles
-	double theta, phi;	// Polar and Azimuthal angle 
-   	double thetat, phit;    // Translation angles 
-   	double Work;            // Work done by rotor
-   	double cu;              // Characteristic velocity
-   	bool rotate;            // Rotation yes or no
-	coord nf, nr;		// Normal vector fan, rotation 
+    double rampT;		// Time to start up rotor
+    double P, Prho;		// Power, powerdensity 
+    double R, W, A, V;	// Diameter, Thickness, Area ,Volume
+    double diaVol;		// Diagnosed rotor volume 
+    double x0, y0, z0;	// Origin of rotor
+    double xt, yt, zt;      // Translation angles
+    double theta, phi;	// Polar and Azimuthal angle 
+    double thetat, phit;    // Translation angles 
+    double Work;            // Work done by rotor
+    double cu;              // Characteristic velocity
+    bool rotate;            // Rotation yes or no
+    coord nf, nr;		// Normal vector fan, rotation 
 };
 
 /** Functions */

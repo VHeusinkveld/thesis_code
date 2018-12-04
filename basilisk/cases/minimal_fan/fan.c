@@ -74,6 +74,13 @@ event init(t = 0){
 	eps = 0.07*rot.cu;				// Wavelet estimator based on flow velocity
 }
 
+/** Reset defaults for the Poisson solver */
+
+event reset_pois(i = 10){
+     DT = 1.;
+     TOLERANCE=10E-3;
+}
+
 /** Adaptivity */
 event adapt(i++) {
 	adapt_wavelet((scalar *){fan,u},(double []){0.,eps,eps},maxlevel,minlevel);

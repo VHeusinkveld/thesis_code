@@ -150,9 +150,7 @@ event end(TEND){
     if(TEND > ediag.startDiag) {
         char nameEquif[90];
         snprintf(nameEquif, 90, "%s/%s", out.dir, "equifield");
-        FILE * fped = fopen(nameEquif, "w");
-        equi_output(b, fped, ediag.level, ediag.ii);
-        fclose(fped);
+        equi_output_ascii(b, nameEquif, ediag.level, ediag.ii);
 
         ediag.ii = 0;
     }

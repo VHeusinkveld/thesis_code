@@ -7,7 +7,7 @@
 #define TREF 273.	// Kelvin
 #define INVERSION .2 	// Kelvin per meter
 
-#define strat(s) gCONST*(INVERSION + gCONST/CP)*s/TREF // Stratification 
+#define STRAT(s) gCONST*(INVERSION + gCONST/CP)*s/TREF // Stratification 
 //#define strat(s) gCONST*5.*log(sqrt(s)+1)/TREF
 
 double crho = 1.;
@@ -35,7 +35,7 @@ void init_physics(){
 
 
 	b[bottom] = dirichlet(0.);
-	b[top] = dirichlet(strat(y));
+	b[top] = dirichlet(STRAT(y));
 
 	periodic (left);
 

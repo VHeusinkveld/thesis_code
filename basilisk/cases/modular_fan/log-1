@@ -1,0 +1,20 @@
+ERROR Check fan volume, V=1.46555, Vr=0
+i=0 t=0 p=0 u=0 b=0 
+ERROR Check fan volume, V=1.46555, Vr=1.03777
+1
+ERROR Check fan volume, V=1.46555, Vr=1.05012
+ERROR Check fan volume, V=1.46555, Vr=1.07042
+ERROR Check fan volume, V=1.46555, Vr=1.09725
+2
+ERROR Check fan volume, V=1.46555, Vr=1.12769
+i=166 t=5 p=1 u=1 b=1 
+ERROR Check fan volume, V=1.46555, Vr=0
+i=0 t=0 p=1 u=1 b=1 
+1
+2
+i=166 t=5 p=1 u=1 b=1 
+ERROR Check fan volume, V=1.46555, Vr=0
+i=0 t=0 p=1 u=1 b=1 
+1
+2
+i=166 t=5 p=1 u=1 b=1 

@@ -143,14 +143,13 @@ event profiles(t += out.dtProfile) {
 /** Average in time */
 event equidiags(t = ediag.startDiag; t += ediag.dtDiag) {
 	ediag.ii = equi_diag(b, ediag.level, ediag.ii);
-	fprintf(stderr, "%d\n", ediag.ii);
 }
 
 event end(TEND){
     if(TEND > ediag.startDiag) {
         char nameEquif[90];
         snprintf(nameEquif, 90, "%s/%s", out.dir, "equifield");
-        equi_output_ascii(b, nameEquif, ediag.level, ediag.ii);
+        equi_output_binary(b, nameEquif, ediag.level, ediag.ii);
 
         ediag.ii = 0;
     }
@@ -194,12 +193,12 @@ event movies(t += out.dtVisual) {
 	draw_vof("fan", fc = {1,0,0});
     }
     translate(-rot.z0,-rot.y0, -L0){
-      	squares("b", n = {0.,0,1.}, alpha=rot.z0, min=strat(0.), max=strat(L0));
-        cells(n = {0.,0.,1.}, alpha = rot.z0);
+      	squares("b", n = {0,0,1}, alpha=rot.z0, min=strat(0.), max=strat(L0));
+        cells(n = {0,0,1}, alpha = rot.z0);
     }
     
     translate(0.,-rot.y0,-rot.z0){
-        squares("b", n = {1.,0,0.}, alpha=rot.x0, min=strat(0.), max=strat(L0));
+        squares("b", n = {1,0,0}, alpha=rot.x0, min=strat(0.), max=strat(L0));
     }
 
     /** Save file with certain fps*/

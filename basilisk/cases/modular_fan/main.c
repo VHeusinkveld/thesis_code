@@ -83,12 +83,14 @@ event adapt(i++) {
 }
 
 /** Progress event */
-event progress(t+=5.) {
+event progress(t+=5) {
     fprintf(stderr, "i=%d t=%g p=%d u=%d b=%d \n", i, t, mgp.i, mgu.i, mgb.i);
 }
 
 event dumpfields(t=60; t+=60) {
-    dump(file = "restart", list = all);
+    char nameDump[90];
+    snprintf(nameDump, 90, "./%s/fielddump", out.dir);
+    dump(file = nameDump, list = all);
 }
 
 /** End the simulation */

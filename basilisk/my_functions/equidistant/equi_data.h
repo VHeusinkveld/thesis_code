@@ -7,24 +7,36 @@ So far this function works with MPI and only works in 3D.
 
 Short description of what they do:
 
-//void equi_diag(scalar s){
+//void equi_diag(scalar s, int lvl, int diagi) {
     adds values to the equifield array
 }
 
-//void equi_output(scalar s, FILE * fp){
-    outputs equifield to file fp in the format: 
-    place = x*n*n + y*n + z*n
+//void equi_output_ascii (scalar s, char * fname, int lvl, int diagi) {
+    outputs equifield array to ascii file fname in the format: 
+    place = x*n*n + y*n + z
+    data is devided by diagi to average
+}
+
+//void equi_output_binary(scalar s, char * fname, int lvl, int diagi)i {
+    outputs equifield to file binary fname in the format: 
+    place = x*n*n + y*n + z
+}
+
+//void equi_import_binary (scalar s, char * fname, int lvl) { 
+    imports data written by the equi_output_binary(...) function
+    data is read into scalar s, no interpolation is used.
 }
 
 
 TODO implement 2D
-TODO walking average since values in equifield get big, or divide before summing?
+TODO walking average since values in equifield could get big, or divide before summing?
+TODO multiple fields at once? 
 */
 
 double *equifield = NULL; 	// The diagnostics field
 
 int equi_diag (scalar s, int lvl, int diagi){  
-    int len = 1;		// TODO implement multiple scalar field averaging
+    int len = 1;		
     int n = 1<<lvl;
     if(!equifield) {
         equifield = calloc(len*n*n*n, sizeof(double)); // Init with zeros
@@ -39,20 +51,20 @@ int equi_diag (scalar s, int lvl, int diagi){
     foreach_level_or_leaf(lvl) {
   	if(level < lvl){
 	    int pn = 1<<(lvl-level);
-	    for(int i = 0; i < pn; i++){
-		for(int j = 0; j < pn; j++){
-		    for(int k = 0; k < pn; k++){
+	    for(int i = 0; i < pn; i++) {
+		for(int j = 0; j < pn; j++) {
+		    for(int k = 0; k < pn; k++) {
 			
-			double ctrans = dDelta/2. - Delta/2.;	// Translation to corner of cell
-			double xx = x + ctrans + i*dDelta;   	// Coordinates in equidistant grid
+			double ctrans = dDelta/2. - Delta/2.;	  // Translation to corner of cell
+			double xx = x + ctrans + i*dDelta;   	  // Coordinates in equidistant grid
 			double yy = y + ctrans + j*dDelta;
  			double zz = z + ctrans + k*dDelta;
 
-		        int ii = round((xx - dDelta/2.)/dDelta); // Iteration in equidistant grid
+		        int ii = round((xx - dDelta/2.)/dDelta);  // Iteration in equidistant grid
 	         	int jj = round((yy - dDelta/2.)/dDelta);
             	  	int kk = round((zz - dDelta/2.)/dDelta);
 
-	    		int place = ii*n*n + jj*n + kk*len;	// Location in equidistant grid 
+	    		int place = ii*n*n + jj*n + kk*len;  	  // Location in equidistant grid 
 			double temp = interpolate(s, xx, yy, zz); // Linear interpolation 
 
  			equifield[place] += temp;
@@ -73,25 +85,33 @@ int equi_diag (scalar s, int lvl, int diagi){
     return diagi + 1;
 }
 
-void equi_output (scalar s, FILE * fp, int lvl, int diagi){
+
+/** 
+Output equidistant double field to double binary file 
+*/
+void equi_output_binary (scalar s, char * fname, int lvl, int diagi) {    
     int len = 1;
     int n = 1<<lvl;
 
     if(pid() == 0){
+    FILE * fpm = fopen(fname, "w");     
 // Make sure all thread values are summed up using MPI
 @if _MPI
     MPI_Reduce (MPI_IN_PLACE, equifield, len*n*n*n, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
 @endif
+    int sizef = sizeof(double);
     int len = 1;
-    for(int i = 0; i < n; i++){
-        for(int j = 0; j < n; j++){
-            for(int k = 0; k < n; k++){
+    for(int i = 0; i < n; i++) {
+        for(int j = 0; j < n; j++) {
+            for(int k = 0; k < n; k++) {
 		int place = i*n*n + j*n + k*len;
-		double temp = (equifield[place]/((double)diagi)); // Divide by number of additions
-	        fprintf(fp, "%g\t", temp);
+		double temp = (double)(equifield[place]/((double)diagi)); // Divide by number of additions
+	        fseek(fpm, place*sizef, SEEK_SET);
+    		fwrite(&temp, sizef, 1, fpm); ;
 	    }
 	}    
     }
+    fclose(fpm);	
     }
 @if _MPI
     else // slave
@@ -99,50 +119,115 @@ void equi_output (scalar s, FILE * fp, int lvl, int diagi){
 @endif
 }
 
-
-/**
-Started on a function that would import data, so far did not make further progress since implementation in python is considered*/
-
-/*
-void equi_load (struct sEquiLoad p){
+/** 
+Output equidistant double field to ascii file 
+*/
+void equi_output_ascii (scalar s, char * fname, int lvl, int diagi) {
     int len = 1;
-    int n = 1<<diaglevel;
-    double dDelta = 0.9999999*L0/n;  
+    int n = 1<<lvl;
 
+    if(pid() == 0){
+    FILE * fpm = fopen(fname, "w"); 
+// Make sure all thread values are summed up using MPI
 @if _MPI
+    MPI_Reduce (MPI_IN_PLACE, equifield, len*n*n*n, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+@endif
+    int len = 1;
+    for(int i = 0; i < n; i++) {
+        for(int j = 0; j < n; j++) {
+            for(int k = 0; k < n; k++) {
+		int place = i*n*n + j*n + k*len;
+		double temp = (equifield[place]/((double)diagi)); // Divide by number of additions
+	        fprintf(fpm, "%g\t", temp);
+	    }
+	}    
+    }
+    fclose(fpm);	
+    }
+@if _MPI
+    else // slave
+    MPI_Reduce (equifield, NULL, len*n*n*n, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+@endif
+}
+
+/** 
+Importing binary doubles from file written by equi_output_binary(...) 
+It is a bit bodged together but for my application it seems fast enough. 
+*/
+void equi_import_binary (scalar s, char * fname, int lvl){  
+    int len = 1;		
+    int n = 1<<lvl;
+
+    free(equifield);	// Make sure equifield is reset 
+    equifield = NULL;	
+    
+    if(!equifield) {
+        equifield = calloc(len*n*n*n, sizeof(double)); // Init with zeros
+    } 	
+
+    double dDelta = 0.9999999*L0/n;  
+    
+    // Read data into equifield
+    if(pid() == 0){
+    FILE * fpm = fopen(fname, "r");     
+    int sizef = sizeof(double);
+    
+    for(int i = 0; i < n; i++) {
+        for(int j = 0; j < n; j++) {
+            for(int k = 0; k < n; k++) {
+		int place = i*n*n + j*n + k*len;
+		fseek(fpm, place*sizef, SEEK_SET);
+    		fread(&equifield[place], sizef, 1, fpm); ;
+	    }
+	}    
+    }
+    fclose(fpm);	
+    }
+
+@if _MPI 
     MPI_Allreduce (MPI_IN_PLACE, equifield, len*n*n*n, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 @endif
+	
 
-    foreach(){
-	s[] = 0.;
-    }
-    restriction(p.list);
-    boundary(p.list);
+    // Filling each cell with respective value
+    foreach() {
+  	if(level < lvl){
+ 	    double aveval = 0.;
+	    int pn = 1<<(lvl-level);
+	    for(int i = 0; i < pn; i++) {
+		for(int j = 0; j < pn; j++) {
+		    for(int k = 0; k < pn; k++) {
+			
+			double ctrans = dDelta/2. - Delta/2.;	// Translation to corner of cell
+			double xx = x + ctrans + i*dDelta;   	// Coordinates in equidistant grid
+			double yy = y + ctrans + j*dDelta;
+ 			double zz = z + ctrans + k*dDelta;
 
-    foreach_level(diaglevel) {
-	int l =0;
-	for(scalar s in p.list) {
-       	    int i = round((x - dDelta/2.)/dDelta);
-       	    int j = round((y - dDelta/2.)/dDelta);
-       	    int k = round((z - dDelta/2.)/dDelta);
-    
-	    int place = i*n*n + j*n + k*len + l;
-	    double temp = equifield[place]/diagii;
-            fprintf(stderr, "%g", temp);
-	    s[] = temp;
-	    l++;
-        }
-    }
-    restriction(p.list);
-    boundary(p.list);
-    foreach_level(diaglevel+1){
-	for(scalar s in p.list) {
-	    fprintf(stderr, "%g", s[]);
+		        int ii = round((xx - dDelta/2.)/dDelta); // Iteration in equidistant grid
+	         	int jj = round((yy - dDelta/2.)/dDelta);
+            	  	int kk = round((zz - dDelta/2.)/dDelta);
+
+	    		int place = ii*n*n + jj*n + kk*len;	// Location in equidistant grid 
+
+ 			aveval += equifield[place];
+		    }
+		}
+	    }
+	    s[] = 1.*aveval/cube(pn);
+
+        } else {
+ 
+            int ii = round((x-dDelta/2)/dDelta); 
+       	    int jj = round((y-dDelta/2)/dDelta); 
+     	    int kk = round((z-dDelta/2)/dDelta);
+
+	    int place = ii*n*n + jj*n + kk*len;
+	    s[] = 1.* equifield[place];
 	}
-    } 
-
+    }
+    boundary({s});
 }
-*/
+
 
 
 

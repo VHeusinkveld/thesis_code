@@ -50,7 +50,7 @@ void init_physics(){
 	#endif  
 
 	foreach() {
-		b[] = strat(y);
+		b[] = STRAT(y);
 		u.x[] = 1.*def.ugeo*min(sq(y),1);
 		#if dimension == 3
 			u.z[] = 1.*def.vgeo*min(sq(y),1);

@@ -13,7 +13,7 @@
 /** Global variables */
 int minlevel, maxlevel;         	// Grid depths
 double meps, eps;			// Maximum error and error in u fields
-double TEND = 5.;
+double TEND = 300.;
 
 char sim_ID[] = "rotation";		// Simulation identifier
 char sim_var[] = "theta";  		// Notes if a variable is varied over runs
@@ -25,22 +25,19 @@ char sim_var[] = "theta";  		// Notes if a variable is varied over runs
 /** Initialisation */
 int main() {	
     minlevel = 5;
-    maxlevel = 7;
+    maxlevel = 9;
 
-    L0 = 100.;
+    L0 = 200.;
     X0 = Y0 = Z0 = 0.;
 
     // Possibility to run for variable changes
-    for(rot.theta=100.*M_PI/180.; rot.theta<121.*M_PI/180.; rot.theta+=10.*M_PI/180.) {
-        init_grid(1<<5);
+    for(rot.theta=80.*M_PI/180.; rot.theta<=151.*M_PI/180.; rot.theta+=10.*M_PI/180.) {
+        init_grid(1<<6);
 	a = av; 
 
-        // TODO Implement for each dimension
-	u.x.refine = refine_linear; 			// Momentum conserved 
-	u.y.refine = refine_linear;
-	#if dimension == 3
-		u.z.refine = refine_linear;
-	#endif
+        foreach_dimension() {
+	    u.x.refine = refine_linear;  		// Momentum conserved 
+	}
 
 	fan.prolongation = fraction_refine;		// Fan is a volume fraction
 	p.refine = p.prolongation = refine_linear;
@@ -55,19 +52,18 @@ int main() {
 	out.sim_i++;					// Simulation iteration
  
     	run();						// Start simulation 
-	
-        free(equifield);				// We dont want memory leaks 
-        equifield = NULL;				// Reset equifield pointer
+
     }
 }
 
 /** Initialisation */
 event init(t=0) {
-    rot.rotate = true;
+    rot.rotate = false;
+    rot.phi = 0;
     init_physics();
     init_rotor();
     fan.prolongation=fraction_refine;
-    refine (fan[] > 0. && level < maxlevel);
+    refine(fan[] > 0. && level < maxlevel);
     eps = min(meps, 0.07*rot.cu);
 }
 

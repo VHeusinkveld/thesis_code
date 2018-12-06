@@ -49,7 +49,7 @@ double average_over_yp(scalar * list, double * v, double yp){
   foreach(reduction(+:a) reduction(+:m))
 #endif
     {
-      if ((fabs(y-yp) <= (Delta/2))){
+      if ((fabs(y-yp) < (Delta/2))){
 	m++;
 	double b = 1./Delta;
 	foreach_dimension()
@@ -96,7 +96,7 @@ void field_profile(struct prof p){
     p.fp = stdout;
   double dzn;
   if (p.n)
-    dzn = (p.h - p.ym) / ((double)p.n - 0.99999999);
+    dzn = 0.9999999*(p.h - p.ym)/((double)p.n - 1.); // TODO Check if this is now solved
   int len = list_len(p.list);
   boundary(p.list);
   FILE * fp = p.fp;

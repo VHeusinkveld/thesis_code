@@ -30,11 +30,11 @@ void init_rotor() {
     	if(!rot.rampT)
 	    	rot.rampT = 1.;
     	if(!rot.R)
-	    	rot.R = L0/80.;     
+	    	rot.R = L0/160.;     
     	if(!rot.W)
 	    	rot.W = 0.3;    
     	if(!rot.Prho)                  
-     		rot.Prho = 8.*L0;		
+     		rot.Prho = 4.*L0;		
    	if(!rot.x0)
     		rot.x0 = L0/2.;
     	if(!rot.y0)

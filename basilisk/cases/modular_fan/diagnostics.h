@@ -26,6 +26,7 @@ struct sEquiDiag {
     double dtDiag;
     double startDiag;
     double endDiag;
+    double dtOutput;
 };
 
 struct sOutput {
@@ -39,6 +40,7 @@ struct sOutput {
 	char dir[30];
 	char dir_profiles[60];
 	char dir_slices[60];
+        char dir_equifields[60];
 	int sim_i;
 };
 
@@ -53,7 +55,7 @@ struct sbViewSettings {
 /** Initialize structures */
 struct sOutput out = {.dtDiag = 1., .dtVisual=2., .dtSlices=120., .dtProfile=30., .main_dir="results", .sim_i=0};
 
-struct sEquiDiag ediag = {.level = 7, .ii = 0, .startDiag = 1., .dtDiag = 3.};
+struct sEquiDiag ediag = {.level = 6, .ii = 0, .startDiag = 0., .dtDiag = 2., .dtOutput = 60.};
 
 struct sbViewSettings bvsets = {.phi=0., .theta=0., .sphi=0., .stheta=0.};
 
@@ -79,7 +81,7 @@ event diagnostics (t+=out.dtDiag){
 		reduction(max:maxVel) reduction(+:bEnergy) reduction(+:tempDiss)) {
 
 		tempVol += dv()*fan[];
-		bEnergy += dv()*y*(b[] - strat(y));
+		bEnergy += dv()*y*(b[] - STRAT(y));
 		
 		foreach_dimension() {
 			ekin[] += sq(u.x[]);
@@ -137,7 +139,7 @@ event diagnostics (t+=out.dtDiag){
 event profiles(t += out.dtProfile) {
 	char nameProf[90];
 	snprintf(nameProf, 90, "./%s/t=%05g", out.dir_profiles, t);
-	field_profile((scalar *){b, u}, nameProf, n=128);
+	field_profile((scalar *){b, u}, nameProf, n=100);
 }
 
 /** Average in time */
@@ -145,15 +147,19 @@ event equidiags(t = ediag.startDiag; t += ediag.dtDiag) {
 	ediag.ii = equi_diag(b, ediag.level, ediag.ii);
 }
 
-event end(TEND){
-    if(TEND > ediag.startDiag) {
-        char nameEquif[90];
-        snprintf(nameEquif, 90, "%s/%s", out.dir, "equifield");
-        equi_output_binary(b, nameEquif, ediag.level, ediag.ii);
 
-        ediag.ii = 0;
-    }
+event equioutputs(t = (ediag.dtOutput + ediag.startDiag); t += ediag.dtOutput) {
+    char nameEquif[90];
+    snprintf(nameEquif, 90, "%s/%st=%05g", out.dir_equifields, "equifield", t);
+    equi_output_binary(b, nameEquif, ediag.level, ediag.ii);
+
+    ediag.ii = 0;
+	
+    free(equifield);				// We dont want memory leaks 
+    equifield = NULL;				// Reset equifield pointer
+    
 }
+
 
 #endif
 
@@ -172,7 +178,7 @@ event movies(t += 0.5) {
     }
 
     boundary ({b, lev, omega, ekinRho});
-    output_ppm (b, file = "ppm2mp4 ./results/buoyancy.mp4", n = 1<<maxlevel, linear = true, max=strat(L0), min=strat(0.));
+    output_ppm (b, file = "ppm2mp4 ./results/buoyancy.mp4", n = 1<<maxlevel, linear = true, max=STRAT(L0), min=STRAT(0.));
     output_ppm (ekinRho, file = "ppm2mp4 ./results/ekin.mp4", n = 1<<maxlevel, min = 0, max = 0.5*sq(rot.cu));
     output_ppm (omega, file = "ppm2mp4 ./results/vort.mp4", n = 1<<maxlevel, linear = true); 
     output_ppm (lev, file = "ppm2mp4 ./results/grid_depth.mp4", n = 1<<maxlevel, min = minlevel, max = maxlevel);
@@ -189,16 +195,16 @@ event movies(t += out.dtVisual) {
     
     translate(-rot.x0,-rot.y0,-rot.z0) {
         box(notics=false);
-        isosurface("l2", v=-0.05, color="b", min=strat(0.), max=strat(L0));
+        isosurface("l2", v=-0.05, color="b", min=STRAT(0.), max=STRAT(L0));
 	draw_vof("fan", fc = {1,0,0});
     }
     translate(-rot.z0,-rot.y0, -L0){
-      	squares("b", n = {0,0,1}, alpha=rot.z0, min=strat(0.), max=strat(L0));
+      	squares("b", n = {0,0,1}, alpha=rot.z0, min=STRAT(0.), max=STRAT(L0));
         cells(n = {0,0,1}, alpha = rot.z0);
     }
     
     translate(0.,-rot.y0,-rot.z0){
-        squares("b", n = {1,0,0}, alpha=rot.x0, min=strat(0.), max=strat(L0));
+        squares("b", n = {1,0,0}, alpha=rot.x0, min=STRAT(0.), max=STRAT(L0));
     }
 
     /** Save file with certain fps*/
@@ -208,7 +214,7 @@ event movies(t += out.dtVisual) {
 }
 
 /** Take relevant field slices and write away */
-event slices(t+=out.dtSlices) {
+event slices(t=out.dtSlices; t+=out.dtSlices) {
     char nameSlice[90];
     coord slice = {1., 0., 1.};
 
@@ -253,7 +259,8 @@ void sim_dir_create(){
     sprintf(out.dir, "./%s/%s%02d", out.main_dir, sim_ID, out.sim_i);
     sprintf(out.dir_profiles, "%s/profiles/", out.dir);
     sprintf(out.dir_slices, "%s/slices/", out.dir);
- 
+    sprintf(out.dir_equifields, "%s/equifields/", out.dir);
+    
     if (pid() == 0){
     struct stat st = {0};
     if (stat(out.main_dir, &st) == -1) {
@@ -268,7 +275,10 @@ void sim_dir_create(){
     }
     if (stat(out.dir_profiles, &st) == -1) {
         mkdir(out.dir_profiles, 0777);
-    }        
+    }  
+    if (stat(out.dir_equifields, &st) == -1) {
+        mkdir(out.dir_equifields, 0777);
+    }  
     }
 }
 

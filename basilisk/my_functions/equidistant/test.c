@@ -12,13 +12,13 @@ double ave_err;
 
 #include "grid/octree.h"
 #include "run.h"
-#include "equi_databin.h"  // The functions that are to be tested
+#include "equi_data.h"  // The functions that are to be tested
 
 int diagii = 0;
-int diaglvl = 7;
+int diaglvl = 6;
 
-int minlevel = 3; 	 
-int maxlevel = 6;
+int minlevel = 4; 	 
+int maxlevel = 7;
 scalar b[];
 
 
@@ -79,7 +79,7 @@ event end(t=1){
     double differ = 0.;;
     int differii = 0;;
     foreach(reduction(+:differ) reduction(+:differii)) {
-	differ += fabs(h[] - b[]); 
+	differ += fabs((h[] - b[])/b[]); 
 	//printf("%g\n", fabs((h[] - b[])/b[]));
 	differii++;
     }

@@ -87,9 +87,9 @@ void field_profile(struct prof p){
   if(!p.list)
     p.list = all;
   if (!p.ym) 
-    p.ym = Y0 + 0.9999999*(L0 / (double)(1 << (depth() + 1)));
+    p.ym = Y0 + (L0 / (double)(1 << ((grid->maxdepth) + 1)));
   if (!p.h)
-    p.h = Y0 + L0 - 0.9999999*(L0 / (double)(1 << (depth() + 1)));
+    p.h = Y0 + L0 - (L0 / (double)(1 << ((grid->maxdepth) + 1)));
   if (!p.rf)
     p.rf = 1;
   if (!p.fname && !p.fp)

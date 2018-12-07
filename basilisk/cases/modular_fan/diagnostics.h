@@ -55,7 +55,7 @@ struct sbViewSettings {
 /** Initialize structures */
 struct sOutput out = {.dtDiag = 1., .dtVisual=2., .dtSlices=120., .dtProfile=30., .main_dir="results", .sim_i=0};
 
-struct sEquiDiag ediag = {.level = 6, .ii = 0, .startDiag = 0., .dtDiag = 2., .dtOutput = 60.};
+struct sEquiDiag ediag = {.level = 7, .ii = 0, .startDiag = 0., .dtDiag = 3., .dtOutput = 60.};
 
 struct sbViewSettings bvsets = {.phi=0., .theta=0., .sphi=0., .stheta=0.};
 
@@ -157,7 +157,6 @@ event equioutputs(t = (ediag.dtOutput + ediag.startDiag); t += ediag.dtOutput) {
 	
     free(equifield);				// We dont want memory leaks 
     equifield = NULL;				// Reset equifield pointer
-    
 }
 
 

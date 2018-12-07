@@ -87,9 +87,9 @@ void field_profile(struct prof p){
   if(!p.list)
     p.list = all;
   if (!p.ym) 
-    p.ym = Y0 + (L0 / (double)(1 << (depth() + 1)));
+    p.ym = Y0 + 0.9999999*(L0 / (double)(1 << (depth() + 1)));
   if (!p.h)
-    p.h = Y0 + L0 - (L0 / (double)(1 << (depth() + 1)));
+    p.h = Y0 + L0 - 0.9999999*(L0 / (double)(1 << (depth() + 1)));
   if (!p.rf)
     p.rf = 1;
   if (!p.fname && !p.fp)
@@ -124,7 +124,7 @@ void field_profile(struct prof p){
   */
   while (yp <= p.h){
     double aver[len];
-    memset(&aver, 0, sizeof(aver)); 
+    memset(&aver, 0, sizeof(aver[0])*len); 
     double dz = average_over_yp(p.list, aver, yp);
     if (pid() == 0){
       int k = 0;

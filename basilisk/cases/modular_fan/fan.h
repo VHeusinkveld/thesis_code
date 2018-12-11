@@ -34,7 +34,7 @@ void init_rotor() {
     	if(!rot.W)
 	    	rot.W = 0.3;    
     	if(!rot.Prho)                  
-     		rot.Prho = 4.*L0;		
+     		rot.Prho = 20.*L0;		
    	if(!rot.x0)
     		rot.x0 = L0/2.;
     	if(!rot.y0)
@@ -157,7 +157,6 @@ void rotor_forcing(){
 
 			u.x[] = usgn*sqrt(fabs(utemp));
 
-			fantracer[] = 10.;
 		}
 		}
 	}

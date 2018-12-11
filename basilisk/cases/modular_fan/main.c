@@ -31,7 +31,7 @@ int main() {
     X0 = Y0 = Z0 = 0.;
 
     // Possibility to run for variable changes
-    for(rot.theta=110.*M_PI/180.; rot.theta<=151.*M_PI/180.; rot.theta+=50.*M_PI/180.) {
+    for(rot.theta=90.*M_PI/180.; rot.theta<=151.*M_PI/180.; rot.theta+=100.*M_PI/180.) {
         init_grid(1<<6);
 	a = av; 
 
@@ -64,7 +64,7 @@ event init(t=0) {
     init_rotor();
     fan.prolongation=fraction_refine;
     refine(fan[] > 0. && level < maxlevel);
-    eps = min(meps, 0.07*rot.cu);
+    eps = min(meps, 0.4);
 }
 
 /** Return to standard tolerances and DTs for poisson solver */ 

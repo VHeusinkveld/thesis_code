@@ -8,46 +8,62 @@
 #define INVERSION .2 	// Kelvin per meter
 
 #define STRAT(s) gCONST*(INVERSION + gCONST/CP)*s/TREF // Stratification 
+#define WIND(s) def.wind/0.41*log((s-0.075)/0.1) 	// Wind profile TODO
 //#define strat(s) gCONST*5.*log(sqrt(s)+1)/TREF
 
 double crho = 1.;
-scalar b[],fantracer[];
-scalar * tracers = {b,fantracer}; // TODO tracer field remove
+scalar b[];
+scalar * tracers = {b};
 	
 face vector av[]; 
 struct sCase def;
 
 struct sCase {
-	double ugeo;
-	double vgeo;
-	double corf;
+	double wind;
+	double wphi;
 };
 
 void init_physics(){
- 	def.ugeo = 0.;
-	def.vgeo = 0.;
-	def.corf = pow(10.,-4.);
+ 	def.wind = -0.2;
+        def.wphi = 0.;
+
 	b.nodump = false; // TODO
-    	
-        u.n[bottom] = dirichlet(0.);
-	u.t[bottom] = neumann(0.);
-	u.n[top] = dirichlet(0.);
-	u.t[top] = neumann(0.); //dirichlet(def.ugeo);
+
+	if(def.wind == 0.){    	
+	    u.n[bottom] = dirichlet(0.);
+	    u.t[bottom] = dirichlet(0.);
+
+	    u.n[top] = dirichlet(0.);
+ 	    u.t[top] = neumann(0.);
+
+            periodic (left);
+
+	} else if(fabs(def.wind) > 0.) {
+	    //if(def.wind > 0.) {
+	    //} else if(def.wind<0.) {
+	    //}
+
+            u.n[right] = dirichlet(WIND(y));
+
+	    u.n[left] = dirichlet(WIND(y));
+	    
+	    u.n[bottom] = dirichlet(0.);
+	    u.t[bottom] = dirichlet(0.); //neumann(0.);
+
+	    u.n[top] = dirichlet(0.);
+ 	    u.t[top] = neumann(0.);
+
+            b[left] = dirichlet(STRAT(y));
+            b[right] = dirichlet(STRAT(y));
+        }
+	
 	
 	b[bottom] = dirichlet(0.);
 	b[top] = dirichlet(STRAT(y));
 
-	//periodic (left);
-
-	u.n[left] = -1.;
-	u.n[right] = -1.;
-
-	b[left] = dirichlet(STRAT(y));
-	b[right] = dirichlet(STRAT(y));
-
 	#if dimension == 3
-		u.r[bottom] = dirichlet(0.);
-		u.r[top] = neumann(0.); //dirichlet(def.vgeo);
+		u.r[bottom] = dirichlet(0.); //	neumann(0.);
+		u.r[top] = neumann(0.); 
 		
 		//Evis[bottom] = dirichlet(0.);
         	//Evis[top] = dirichlet(0.);
@@ -57,10 +73,7 @@ void init_physics(){
 
 	foreach() {
 		b[] = STRAT(y);
-		u.x[] = 1.*def.ugeo*min(sq(y),1);
-		#if dimension == 3
-			u.z[] = 1.*def.vgeo*min(sq(y),1);
-		#endif
+       	        u.x[] = WIND(y);
 	}
 }
 
@@ -69,18 +82,6 @@ event acceleration(i++){
 	foreach_face(y){
 		av.y[] = (b[] + b[0,-1])/2.;
 	}
-	if(def.ugeo>0.){
-		foreach_face(x){
-			av.x[] = (def.ugeo - uf.x[])*def.corf;
-		}
-	}
-	#if dimension == 3
-	if(def.vgeo>0.){
-		foreach_face(z){
-			av.z[] = (def.vgeo - uf.z[])*def.corf;
-		}
-	} 
-	#endif
 }
 
 mgstats mgb;

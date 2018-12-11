@@ -194,17 +194,18 @@ event movies(t += out.dtVisual) {
     
     translate(-rot.x0,-rot.y0,-rot.z0) {
         box(notics=false);
-        //isosurface("l2", v=-0.05, color="b", min=STRAT(0.), max=STRAT(L0));
-        isosurface("fantracer", v=.1, color="b", min=STRAT(0.), max=STRAT(L0));
+        isosurface("l2", v=-0.05, color="b", min=STRAT(0.), max=STRAT(L0));
 	draw_vof("fan", fc = {1,0,0});
     }
     translate(-rot.z0,-rot.y0, -L0){
-      	squares("fantracer", n = {0,0,1}, alpha=rot.z0, min=0., max=1.);
+      	squares("u.x", n = {0,0,1}, alpha=rot.z0, min=-WIND(L0), max=WIND(L0));
+      	//squares("b", n = {0,0,1}, alpha=rot.z0, min=STRAT(0.), max=STRAT(L0));
         cells(n = {0,0,1}, alpha = rot.z0);
     }
     
     translate(0.,-rot.y0,-rot.z0){
-        squares("fantracer", n = {1,0,0}, alpha=rot.x0, min=0., max=1.);
+        //squares("p", n = {1,0,0}, alpha=rot.x0);
+        squares("b", n = {1,0,0}, alpha=rot.x0, min=STRAT(0.), max=STRAT(L0));
     }
 
     /** Save file with certain fps*/

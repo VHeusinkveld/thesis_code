@@ -156,6 +156,8 @@ void rotor_forcing(){
 				 -1.*(u.x[] <  0)*(utemp > 0); 
 
 			u.x[] = usgn*sqrt(fabs(utemp));
+
+			fantracer[] = 10.;
 		}
 		}
 	}

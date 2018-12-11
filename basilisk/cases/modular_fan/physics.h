@@ -11,8 +11,9 @@
 //#define strat(s) gCONST*5.*log(sqrt(s)+1)/TREF
 
 double crho = 1.;
-scalar b[];		
-scalar * tracers = {b};
+scalar b[],fantracer[];
+scalar * tracers = {b,fantracer}; // TODO tracer field remove
+	
 face vector av[]; 
 struct sCase def;
 
@@ -26,18 +27,23 @@ void init_physics(){
  	def.ugeo = 0.;
 	def.vgeo = 0.;
 	def.corf = pow(10.,-4.);
-	b.nodump = true; 
+	b.nodump = false; // TODO
     	
         u.n[bottom] = dirichlet(0.);
-	u.t[bottom] = dirichlet(0.);
+	u.t[bottom] = neumann(0.);
 	u.n[top] = dirichlet(0.);
 	u.t[top] = neumann(0.); //dirichlet(def.ugeo);
-
-
+	
 	b[bottom] = dirichlet(0.);
 	b[top] = dirichlet(STRAT(y));
 
-	periodic (left);
+	//periodic (left);
+
+	u.n[left] = -1.;
+	u.n[right] = -1.;
+
+	b[left] = dirichlet(STRAT(y));
+	b[right] = dirichlet(STRAT(y));
 
 	#if dimension == 3
 		u.r[bottom] = dirichlet(0.);

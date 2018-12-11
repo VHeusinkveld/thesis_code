@@ -13,7 +13,7 @@
 /** Global variables */
 int minlevel, maxlevel;         	// Grid depths
 double meps, eps;			// Maximum error and error in u fields
-double TEND = 30.;
+double TEND = 300.;
 
 char sim_ID[] = "rotation";		// Simulation identifier
 char sim_var[] = "theta";  		// Notes if a variable is varied over runs
@@ -25,13 +25,13 @@ char sim_var[] = "theta";  		// Notes if a variable is varied over runs
 /** Initialisation */
 int main() {	
     minlevel = 5;
-    maxlevel = 9;
+    maxlevel = 8;
 
     L0 = 200.;
     X0 = Y0 = Z0 = 0.;
 
     // Possibility to run for variable changes
-    for(rot.theta=80.*M_PI/180.; rot.theta<=151.*M_PI/180.; rot.theta+=10.*M_PI/180.) {
+    for(rot.theta=110.*M_PI/180.; rot.theta<=151.*M_PI/180.; rot.theta+=50.*M_PI/180.) {
         init_grid(1<<6);
 	a = av; 
 

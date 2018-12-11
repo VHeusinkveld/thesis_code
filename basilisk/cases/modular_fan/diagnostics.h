@@ -53,9 +53,9 @@ struct sbViewSettings {
 };
 
 /** Initialize structures */
-struct sOutput out = {.dtDiag = 1., .dtVisual=2., .dtSlices=120., .dtProfile=30., .main_dir="results", .sim_i=0};
+struct sOutput out = {.dtDiag = 1., .dtVisual=1., .dtSlices=120., .dtProfile=60., .main_dir="results", .sim_i=0};
 
-struct sEquiDiag ediag = {.level = 7, .ii = 0, .startDiag = 0., .dtDiag = 3., .dtOutput = 60.};
+struct sEquiDiag ediag = {.level = 5, .ii = 0, .startDiag = 0., .dtDiag = 2., .dtOutput = 60.};
 
 struct sbViewSettings bvsets = {.phi=0., .theta=0., .sphi=0., .stheta=0.};
 
@@ -194,16 +194,17 @@ event movies(t += out.dtVisual) {
     
     translate(-rot.x0,-rot.y0,-rot.z0) {
         box(notics=false);
-        isosurface("l2", v=-0.05, color="b", min=STRAT(0.), max=STRAT(L0));
+        //isosurface("l2", v=-0.05, color="b", min=STRAT(0.), max=STRAT(L0));
+        isosurface("fantracer", v=.1, color="b", min=STRAT(0.), max=STRAT(L0));
 	draw_vof("fan", fc = {1,0,0});
     }
     translate(-rot.z0,-rot.y0, -L0){
-      	squares("b", n = {0,0,1}, alpha=rot.z0, min=STRAT(0.), max=STRAT(L0));
+      	squares("fantracer", n = {0,0,1}, alpha=rot.z0, min=0., max=1.);
         cells(n = {0,0,1}, alpha = rot.z0);
     }
     
     translate(0.,-rot.y0,-rot.z0){
-        squares("b", n = {1,0,0}, alpha=rot.x0, min=STRAT(0.), max=STRAT(L0));
+        squares("fantracer", n = {1,0,0}, alpha=rot.x0, min=0., max=1.);
     }
 
     /** Save file with certain fps*/

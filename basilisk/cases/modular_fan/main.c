@@ -31,7 +31,7 @@ int main() {
     X0 = Y0 = Z0 = 0.;
 
     // Possibility to run for variable changes
-    for(rot.theta=90.*M_PI/180.; rot.theta<=151.*M_PI/180.; rot.theta+=100.*M_PI/180.) {
+    for(rot.theta=100.*M_PI/180.; rot.theta<=151.*M_PI/180.; rot.theta+=100.*M_PI/180.) {
         init_grid(1<<6);
 	a = av; 
 
@@ -60,22 +60,25 @@ int main() {
 event init(t=0) {
     rot.rotate = false;
     rot.phi = 0;
+    eps = .7; //min(meps, 10.);
+    
     init_physics();
     init_rotor();
+
     fan.prolongation=fraction_refine;
     refine(fan[] > 0. && level < maxlevel);
-    eps = min(meps, 0.4);
+
 }
 
 /** Return to standard tolerances and DTs for poisson solver */ 
 event init_change(i=10) {
     TOLERANCE=10E-3;
-    DT = 0.05;
+    DT = 0.5;
 }
 
 /** Adaptivity */
 event adapt(i++) {
-    adapt_wavelet((scalar *){fan,u,b},(double []){0.,eps,eps,eps,1.*9.81/273},maxlevel,minlevel);
+    adapt_wavelet((scalar *){fan,u,b},(double []){0.,eps,eps,eps,3.*9.81/273},maxlevel,minlevel);
 }
 
 /** Progress event */

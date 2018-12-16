@@ -53,7 +53,7 @@ struct sbViewSettings {
 };
 
 /** Initialize structures */
-struct sOutput out = {.dtDiag = 1., .dtVisual=1., .dtSlices=120., .dtProfile=60., .main_dir="results", .sim_i=0};
+struct sOutput out = {.dtDiag = 1., .dtVisual=0.1, .dtSlices=120., .dtProfile=60., .main_dir="results", .sim_i=0};
 
 struct sEquiDiag ediag = {.level = 5, .ii = 0, .startDiag = 0., .dtDiag = 2., .dtOutput = 60.};
 
@@ -189,29 +189,54 @@ event movies(t += out.dtVisual) {
     lambda2(u,l2);
     boundary({l2});
     
-    clear();
-    view(fov=25, tx = 0., ty = 0., phi=bvsets.phi, theta=bvsets.theta, width = 800, height = 800);
+    view(fov=20, tx = 0., ty = 0., phi=bvsets.phi, theta=bvsets.theta, width = 800, height = 800);
     
     translate(-rot.x0,-rot.y0,-rot.z0) {
         box(notics=false);
-        isosurface("l2", v=-0.05, color="b", min=STRAT(0.), max=STRAT(L0));
+        isosurface("l2", v=-0.05, color="b", min=STRAT(0.), max=STRAT(1.2*rot.y0));
 	draw_vof("fan", fc = {1,0,0});
     }
     translate(-rot.z0,-rot.y0, -L0){
-      	squares("u.x", n = {0,0,1}, alpha=rot.z0, min=-WIND(L0), max=WIND(L0));
-      	//squares("b", n = {0,0,1}, alpha=rot.z0, min=STRAT(0.), max=STRAT(L0));
+      	squares("u.x", n = {0,0,1}, alpha=rot.z0, min=-WIND(1.2*rot.R), max=WIND(1.2*rot.R));
         cells(n = {0,0,1}, alpha = rot.z0);
     }
     
     translate(0.,-rot.y0,-rot.z0){
-        //squares("p", n = {1,0,0}, alpha=rot.x0);
-        squares("b", n = {1,0,0}, alpha=rot.x0, min=STRAT(0.), max=STRAT(L0));
+        squares("u.x", n = {1,0,0}, alpha=rot.x0, min=-WIND(1.2*rot.y0), max=WIND(1.2*rot.y0));
     }
 
     /** Save file with certain fps*/
     char nameVid1[90];
-    snprintf(nameVid1, 90, "ppm2mp4 -r %g ./%s/visual_3d.mp4", 10., out.dir);
+    snprintf(nameVid1, 90, "ppm2mp4 -r %g ./%s/visual_3d_vel.mp4", 10., out.dir);
     save(nameVid1);
+    clear();
+
+    view(fov=20, tx = 0., ty = 0., phi=bvsets.phi, theta=bvsets.theta, width = 800, height = 800);
+    
+    translate(-rot.x0,-rot.y0,-rot.z0) {
+        box(notics=false);
+        isosurface("l2", v=-0.05, color="b", min=STRAT(0.), max=STRAT(1.2*rot.y0));
+	draw_vof("fan", fc = {1,0,0});
+    }
+    translate(-rot.z0,-rot.y0, -L0){
+      	squares("b", n = {0,0,1}, alpha=rot.z0, min=STRAT(0.), max=STRAT(1.2*rot.y0));
+        cells(n = {0,0,1}, alpha = rot.z0);
+    }
+    
+    translate(0.,-rot.y0,-rot.z0){
+        squares("b", n = {1,0,0}, alpha=rot.x0, min=STRAT(0.), max=STRAT(1.2*rot.y0));
+    }
+
+    /** Save file with certain fps*/
+    char nameVid2[90];
+    snprintf(nameVid2, 90, "ppm2mp4 -r %g ./%s/visual_3d_b.mp4", 10., out.dir);
+    save(nameVid2);
+    clear();
+
+
+
+
+
 }
 
 /** Take relevant field slices and write away */

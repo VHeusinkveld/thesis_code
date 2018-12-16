@@ -67,12 +67,12 @@ event Eddyvis(i++){
 /**
 For some user-friendliness, the SGS-mixing of the *tracers* is hard-coded into this header file. 
 */
-
+/*
 event tracer_diffusion(i++){
   for (scalar s in tracers)
     diffusion(s,dt,Kh);
 }
-
+*/
 /**
 ## Usage
 * [LES of A Vortex Cannon](smokey_puff.c)

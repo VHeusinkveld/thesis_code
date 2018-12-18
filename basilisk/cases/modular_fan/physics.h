@@ -7,7 +7,7 @@
 #define TREF 273.	// Kelvin
 #define INVERSION .2 	// Kelvin per meter
 
-//#define STRAT(s) gCONST*(INVERSION + gCONST/CP)*s/TREF 	// Stratification 
+#define STRAT(s) gCONST*(INVERSION + gCONST/CP)*s/TREF 	// Stratification 
 #define WIND(s) def.wind/0.41*log((s-0.075)/0.1) 	// log Wind profile TODO
 
 //#define strat(s) gCONST*5.*log(sqrt(s)+1)/TREF
@@ -16,7 +16,7 @@
 #define BSURF (1.5*b[] - 0.5*b[0, 1])
 #define GFLX (-Lambda*(BSURF - bd))
 double bd = 0, Lambda = 0.0125;
-#define STRAT(s) log(s + a1 + 1.) - log(a1 + 1.) + (QFLX/Lambda + bd)
+//#define STRAT(s) log(s + a1 + 1.) - log(a1 + 1.) + (QFLX/Lambda + bd)
 double a1 = 1;
 
 
@@ -33,7 +33,7 @@ struct sCase {
 };
 
 void init_physics(){
- 	def.wind = -0.1;
+ 	def.wind = 0.;
         def.wphi = 0.;
 
 	b.nodump = false; // TODO

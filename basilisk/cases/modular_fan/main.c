@@ -58,15 +58,20 @@ int main() {
 
 /** Initialisation */
 event init(t=0) {
-    rot.rotate = false;
-    rot.phi = 0;
-    eps = .7; //min(meps, 10.);
+    rot.fan = true;		// Yes we want a fan
+    rot.rotate = false;		// If we want it to rotate 
+
+    rot.phi = 0;		// Reset for different runs
+    
+    eps = .7;
     
     init_physics();
-    init_rotor();
 
-    fan.prolongation=fraction_refine;
-    refine(fan[] > 0. && level < maxlevel);
+    if(rot.fan) {
+        init_rotor();
+        fan.prolongation=fraction_refine;
+        //refine(fan[] > 0. && level < maxlevel);
+    }
 
 }
 

@@ -147,7 +147,7 @@ event equidiags(t = ediag.startDiag; t += ediag.dtDiag) {
 	ediag.ii = equi_diag(b, ediag.level, ediag.ii);
 }
 
-
+/** Eauidistant field output */
 event equioutputs(t = (ediag.dtOutput + ediag.startDiag); t += ediag.dtOutput) {
     char nameEquif[90];
     snprintf(nameEquif, 90, "%s/%st=%05g", out.dir_equifields, "equifield", t);
@@ -159,6 +159,43 @@ event equioutputs(t = (ediag.dtOutput + ediag.startDiag); t += ediag.dtOutput) {
     equifield = NULL;				// Reset equifield pointer
 }
 
+event tempbinning(t+=1) {
+    double Tmax =  1.;
+    double Tmin = -1.;
+
+    int ntot = 30;
+
+    double bins[ntot];
+
+}
+
+event fanvelocity(t+=1) {
+    if(rot.fan) {
+        double length = 30.;
+        int ntot = 60;
+
+	double vels[ntot];	
+
+	double xf0 = rot.x0;
+	double yf0 = rot.y0;
+	double zf0 = rot.z0;
+
+	for(int n; n < ntot; n++) {
+	    double dist = length*n/ntot;
+
+	    double xx = xf0 + dist*rot.nf.x; 
+	    double yy = yf0 + dist*rot.nf.y; 
+	    double zz = zf0 + dist*rot.nf.z; 
+	
+	    double valx = interpolate(u.x, xx, yy, zz);
+	    double valy = interpolate(u.y, xx, yy, zz);
+	    double valz = interpolate(u.z, xx, yy, zz);
+          
+            vels[n] = sqrt(sq(valx) + sq(valy) + sq(valz));
+	    //fprintf(stderr, "v: %g, vx: %g, vy: %g, vz: %g\n", vels[n], valx, valy, valz);
+	}    
+    }
+}
 
 #endif
 
@@ -193,16 +230,16 @@ event movies(t += out.dtVisual) {
     
     translate(-rot.x0,-rot.y0,-rot.z0) {
         box(notics=false);
-        isosurface("l2", v=-0.05, color="b", min=STRAT(0.), max=STRAT(1.2*rot.y0));
+        isosurface("l2", v=-0.05, color="b", min=STRAT(0.), max=STRAT(1.5*rot.y0));
 	draw_vof("fan", fc = {1,0,0});
     }
     translate(-rot.z0,-rot.y0, -L0){
-      	squares("u.x", n = {0,0,1}, alpha=rot.z0, min=-WIND(1.2*rot.R), max=WIND(1.2*rot.R));
+      	squares("u.x", n = {0,0,1}, alpha=rot.z0, min=-WIND(1.5*rot.R), max=WIND(1.5*rot.R));
         cells(n = {0,0,1}, alpha = rot.z0);
     }
     
     translate(0.,-rot.y0,-rot.z0){
-        squares("u.x", n = {1,0,0}, alpha=rot.x0, min=-WIND(1.2*rot.y0), max=WIND(1.2*rot.y0));
+        squares("u.x", n = {1,0,0}, alpha=rot.x0, min=-WIND(1.5*rot.y0), max=WIND(1.5*rot.y0));
     }
 
     /** Save file with certain fps*/
@@ -215,16 +252,16 @@ event movies(t += out.dtVisual) {
     
     translate(-rot.x0,-rot.y0,-rot.z0) {
         box(notics=false);
-        isosurface("l2", v=-0.05, color="b", min=STRAT(0.), max=STRAT(1.2*rot.y0));
+        isosurface("l2", v=-0.05, color="b", min=STRAT(0.), max=STRAT(1.5*rot.y0));
 	draw_vof("fan", fc = {1,0,0});
     }
     translate(-rot.z0,-rot.y0, -L0){
-      	squares("b", n = {0,0,1}, alpha=rot.z0, min=STRAT(0.), max=STRAT(1.2*rot.y0));
+      	squares("b", n = {0,0,1}, alpha=rot.z0, min=STRAT(0.), max=STRAT(1.5*rot.y0));
         cells(n = {0,0,1}, alpha = rot.z0);
     }
     
     translate(0.,-rot.y0,-rot.z0){
-        squares("b", n = {1,0,0}, alpha=rot.x0, min=STRAT(0.), max=STRAT(1.2*rot.y0));
+        squares("b", n = {1,0,0}, alpha=rot.x0, min=STRAT(0.), max=STRAT(1.5*rot.y0));
     }
 
     /** Save file with certain fps*/

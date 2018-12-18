@@ -160,12 +160,27 @@ event equioutputs(t = (ediag.dtOutput + ediag.startDiag); t += ediag.dtOutput) {
 }
 
 event tempbinning(t+=1) {
-    double Tmax =  1.;
-    double Tmin = -1.;
+    double Tmax =  2.;
+    double Tmin = -2.;
 
     int ntot = 30;
 
+    double Tstep = (fabs(Tmax)-fabs(Tmin))/ntot;
+
     double bins[ntot];
+
+    foreach() {
+	double Tdif = TREF/gCONST*b[] - STRAT(y); // TODO think about removing linaer term
+	int place = round((Tdif + fabs(Tmin))/Tstep);
+
+	place = place < 0 ? 0 : place;
+	place = place > ntot ? ntot : place;	
+
+	bins[place] += dv();
+
+   	// TODO Implement MPI and openmp (foreachleaf)
+	// TODO create function that write away
+    }
 
 }
 
@@ -193,6 +208,7 @@ event fanvelocity(t+=1) {
           
             vels[n] = sqrt(sq(valx) + sq(valy) + sq(valz));
 	    //fprintf(stderr, "v: %g, vx: %g, vy: %g, vz: %g\n", vels[n], valx, valy, valz);
+	    // TODO create function that write away
 	}    
     }
 }

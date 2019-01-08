@@ -42,6 +42,7 @@ struct sOutput {
     char dir_slices[60];
     char dir_equifields[60];
     char dir_strvel[60];
+    char dir_diffbins[60];
     int sim_i;
 };
 
@@ -193,12 +194,18 @@ event tempbinning(t+=1) {
     }
 #endif     
     if(pid() == 0) {
+	char nameDiffbins[90];
+    	snprintf(nameDiffbins, 90, "%st=%05g", out.dir_diffbins, t);
+        FILE * fpstr = fopen(nameDiffbins, "w");
+       
+	fprintf(fpstr, "dT\t Prob\n");
+       
         for(int ip=0; ip<ntot; ip+=1) {
             binsp[ip] /= binnorm;
-	    fprintf(stderr, "%g\t", binsp[ip]);
-        }
-	fprintf(stderr, "\n");
-	// TODO Implement writing away function 
+	    fprintf(fpstr, "%g\t %g\n", Tmin + ip*Tstep, binsp[ip]);            
+	}
+	
+	fclose(fpstr);
     }
 
 }
@@ -360,6 +367,8 @@ void sim_dir_create(){
     sprintf(out.dir_slices, "%s/slices/", out.dir);
     sprintf(out.dir_equifields, "%s/equifields/", out.dir);
     sprintf(out.dir_strvel, "%s/strvel/", out.dir);
+    sprintf(out.dir_diffbins, "%s/diffbins/", out.dir);
+
     
     if (pid() == 0){
     struct stat st = {0};
@@ -381,6 +390,9 @@ void sim_dir_create(){
     }  
     if (stat(out.dir_strvel, &st) == -1) {
 	mkdir(out.dir_strvel, 0777);
+    }
+    if (stat(out.dir_diffbins, &st) == -1) {
+	mkdir(out.dir_diffbins, 0777);
     }
     }
 }

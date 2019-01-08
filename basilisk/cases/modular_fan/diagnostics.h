@@ -30,26 +30,26 @@ struct sEquiDiag {
 };
 
 struct sOutput {
-	double dtDiag;
-	double dtVisual;
-	double dtSlices;
-	double dtProfile;
-	double startAve;
-	double dtAve;
-	char main_dir[12];
-	char dir[30];
-	char dir_profiles[60];
-	char dir_slices[60];
-        char dir_equifields[60];
-	int sim_i;
+    double dtDiag;
+    double dtVisual;
+    double dtSlices;
+    double dtProfile;
+    double startAve;
+    double dtAve;
+    char main_dir[12];
+    char dir[30];
+    char dir_profiles[60];
+    char dir_slices[60];
+    char dir_equifields[60];
+    char dir_strvel[60];
+    int sim_i;
 };
 
 struct sbViewSettings {
-	double phi; 			// Phi for 3D bview movie
-	double theta;			// Theta for 3D bview movie
-	double sphi; 			// Polar angle for sliced image RED
-	double stheta;			// Azimuthal angle for sliced image RED
-
+    double phi; 			// Phi for 3D bview movie
+    double theta;			// Theta for 3D bview movie
+    double sphi; 			// Polar angle for sliced image RED
+    double stheta;			// Azimuthal angle for sliced image RED
 };
 
 /** Initialize structures */
@@ -160,35 +160,59 @@ event equioutputs(t = (ediag.dtOutput + ediag.startDiag); t += ediag.dtOutput) {
 }
 
 event tempbinning(t+=1) {
-    double Tmax =  2.;
-    double Tmin = -2.;
+    double Tmax =  2;
+    double Tmin = -2;
 
-    int ntot = 30;
+    int ntot = 51;
 
-    double Tstep = (fabs(Tmax)-fabs(Tmin))/ntot;
+    double Tstep = (fabs(Tmax) + fabs(Tmin))/ntot;
 
-    double bins[ntot];
+    double binsp[ntot];
+    memset(&binsp, 0., ntot*sizeof(double)); 
+    double binnorm = 0;
 
-    foreach() {
-	double Tdif = TREF/gCONST*b[] - STRAT(y); // TODO think about removing linaer term
+#if _OPENMP
+    foreach_leaf() {
+#else 
+    foreach(reduction(+:binnorm)) {
+#endif
+	double Tdif = TREF/gCONST*(b[] - STRAT(y)); // TODO think about removing linaer term
 	int place = round((Tdif + fabs(Tmin))/Tstep);
 
 	place = place < 0 ? 0 : place;
 	place = place > ntot ? ntot : place;	
 
-	bins[place] += dv();
-
-   	// TODO Implement MPI and openmp (foreachleaf)
-	// TODO create function that write away
+	binsp[place] += dv();
+	binnorm += dv();
+    }
+#if _MPI
+    if(pid() == 0) {
+	MPI_Reduce(MPI_IN_PLACE, &binsp[0], ntot, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    } else {
+        MPI_Reduce(&binsp[0], NULL, ntot, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    }
+#endif     
+    if(pid() == 0) {
+        for(int ip=0; ip<ntot; ip+=1) {
+            binsp[ip] /= binnorm;
+	    fprintf(stderr, "%g\t", binsp[ip]);
+        }
+	fprintf(stderr, "\n");
+	// TODO Implement writing away function 
     }
 
 }
 
 event fanvelocity(t+=1) {
+    if(pid() == 0) {
     if(rot.fan) {
-        double length = 30.;
-        int ntot = 60;
-
+	char nameStrvel[90];
+    	snprintf(nameStrvel, 90, "%st=%05g", out.dir_strvel, t);
+        FILE * fpstr = fopen(nameStrvel, "w");
+        fprintf(fpstr, "v, vx, vy, vz\n");
+        
+	double length = 70.;
+        int ntot = 70;
 	double vels[ntot];	
 
 	double xf0 = rot.x0;
@@ -207,9 +231,10 @@ event fanvelocity(t+=1) {
 	    double valz = interpolate(u.z, xx, yy, zz);
           
             vels[n] = sqrt(sq(valx) + sq(valy) + sq(valz));
-	    //fprintf(stderr, "v: %g, vx: %g, vy: %g, vz: %g\n", vels[n], valx, valy, valz);
-	    // TODO create function that write away
-	}    
+	    fprintf(fpstr, "%g, %g, %g, %g\n", vels[n], valx, valy, valz);     
+	}  
+ 	fclose(fpstr); 
+    }
     }
 }
 
@@ -285,11 +310,6 @@ event movies(t += out.dtVisual) {
     snprintf(nameVid2, 90, "ppm2mp4 -r %g ./%s/visual_3d_b.mp4", 10., out.dir);
     save(nameVid2);
     clear();
-
-
-
-
-
 }
 
 /** Take relevant field slices and write away */
@@ -339,6 +359,7 @@ void sim_dir_create(){
     sprintf(out.dir_profiles, "%s/profiles/", out.dir);
     sprintf(out.dir_slices, "%s/slices/", out.dir);
     sprintf(out.dir_equifields, "%s/equifields/", out.dir);
+    sprintf(out.dir_strvel, "%s/strvel/", out.dir);
     
     if (pid() == 0){
     struct stat st = {0};
@@ -358,6 +379,9 @@ void sim_dir_create(){
     if (stat(out.dir_equifields, &st) == -1) {
         mkdir(out.dir_equifields, 0777);
     }  
+    if (stat(out.dir_strvel, &st) == -1) {
+	mkdir(out.dir_strvel, 0777);
+    }
     }
 }
 

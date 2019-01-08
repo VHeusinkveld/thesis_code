@@ -12,10 +12,10 @@
 
 //#define strat(s) gCONST*5.*log(sqrt(s)+1)/TREF
 
-#define QFLX (-0.005)
+#define QFLX (-0.002)
 #define BSURF (1.5*b[] - 0.5*b[0, 1])
 #define GFLX (-Lambda*(BSURF - bd))
-double bd = 0, Lambda = 0.0125;
+double bd = 0, Lambda = 0.01;
 //#define STRAT(s) log(s + a1 + 1.) - log(a1 + 1.) + (QFLX/Lambda + bd)
 double a1 = 1;
 
@@ -30,7 +30,7 @@ struct sCase def;
 struct sCase {
 	double wind;
 	double wphi;
-};
+};	
 
 void init_physics(){
  	def.wind = 0.;
@@ -73,7 +73,7 @@ void init_physics(){
 		u.r[bottom] = dirichlet(0.); //	neumann(0.);
 		u.r[top] = neumann(0.); 
 		
-		Evis[bottom] = dirichlet(0.);
+		Evis[bottom] = dirichlet(0.); // Flux is explicitly calculated
         	Evis[top] = dirichlet(0.);
 
 		periodic(front);
@@ -121,16 +121,17 @@ event tracer_diffusion(i++){
     foreach() {
         r[] = 0;
         if (y < Delta)
-            r[] = (QFLX + GFLX)/Delta;
-	}
-    double flx = 0, bt = 0;
-    foreach_boundary(bottom){
-        flx += (QFLX + GFLX) * Delta;
-         bt += BSURF * Delta;
+            r[] = (QFLX + GFLX)/sq(Delta); // div needed as normalization 
     }
-    bt /= L0;
-    flx /= L0;
-    printf("%g %g %g %d\n", t, flx, bt, i);  
+    double flx = 0, bt = 0;
+    double fctr = CP*TREF/gCONST;
+    foreach_boundary(bottom reduction(+:flx) reduction(+:bt)) {
+        flx += (QFLX + GFLX) * sq(Delta);
+         bt += BSURF * sq(Delta);
+    }
+    bt /= sq(L0);
+    flx /= sq(L0);
+    fprintf(stderr, "%g %g %g %d\n", t, fctr*flx, fctr*bt, i);  
     
     mgb = diffusion(b, dt, mu, r = r);
 

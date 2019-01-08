@@ -13,7 +13,7 @@
 /** Global variables */
 int minlevel, maxlevel;         	// Grid depths
 double meps, eps;			// Maximum error and error in u fields
-double TEND = 300.;
+double TEND = 10.;
 
 char sim_ID[] = "rotation";		// Simulation identifier
 char sim_var[] = "theta";  		// Notes if a variable is varied over runs
@@ -70,7 +70,6 @@ event init(t=0) {
     if(rot.fan) {
         init_rotor();
         fan.prolongation=fraction_refine;
-        //refine(fan[] > 0. && level < maxlevel);
     }
 
 }

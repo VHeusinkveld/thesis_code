@@ -54,7 +54,7 @@ struct sbViewSettings {
 };
 
 /** Initialize structures */
-struct sOutput out = {.dtDiag = 1., .dtVisual=0.1, .dtSlices=120., .dtProfile=60., .main_dir="results", .sim_i=0};
+struct sOutput out = {.dtDiag = 0.2, .dtVisual=0.1, .dtSlices=120., .dtProfile=60., .main_dir="results", .sim_i=0};
 
 struct sEquiDiag ediag = {.level = 5, .ii = 0, .startDiag = 0., .dtDiag = 2., .dtOutput = 60.};
 
@@ -263,7 +263,7 @@ event movies(t += 0.5) {
 
     boundary ({b, lev, omega, ekinRho});
     output_ppm (b, file = "ppm2mp4 ./results/buoyancy.mp4", n = 1<<maxlevel, linear = true, max=STRAT(L0), min=STRAT(0.));
-    output_ppm (ekinRho, file = "ppm2mp4 ./results/ekin.mp4", n = 1<<maxlevel, min = 0, max = 0.5*sq(rot.cu));
+    output_ppm (ekinRho, file = "ppm2mp4 ./results/ekin.mp4", n = 1<<maxlevel, min = 0, max = 1.*sq(rot.cu));
     output_ppm (omega, file = "ppm2mp4 ./results/vort.mp4", n = 1<<maxlevel, linear = true); 
     output_ppm (lev, file = "ppm2mp4 ./results/grid_depth.mp4", n = 1<<maxlevel, min = minlevel, max = maxlevel);
 }
@@ -278,16 +278,16 @@ event movies(t += out.dtVisual) {
     
     translate(-rot.x0,-rot.y0,-rot.z0) {
         box(notics=false);
-        isosurface("l2", v=-0.05, color="b", min=STRAT(0.), max=STRAT(1.5*rot.y0));
+        isosurface("l2", v=-0.05, color="b", min=STRAT(0.), max=STRAT(2.*rot.y0));
 	draw_vof("fan", fc = {1,0,0});
     }
     translate(-rot.z0,-rot.y0, -L0){
-      	squares("u.x", n = {0,0,1}, alpha=rot.z0, min=-WIND(1.5*rot.R), max=WIND(1.5*rot.R));
+      	squares("u.x", n = {0,0,1}, alpha=rot.z0, min=-fabs(WIND(1.5*rot.y0)), max=fabs(WIND(1.5*rot.y0)));
         cells(n = {0,0,1}, alpha = rot.z0);
     }
     
     translate(0.,-rot.y0,-rot.z0){
-        squares("u.x", n = {1,0,0}, alpha=rot.x0, min=-WIND(1.5*rot.y0), max=WIND(1.5*rot.y0));
+        squares("u.x", n = {1,0,0}, alpha=rot.x0, min=-fabs(WIND(1.5*rot.y0)), max=fabs(WIND(1.5*rot.y0)));
     }
 
     /** Save file with certain fps*/

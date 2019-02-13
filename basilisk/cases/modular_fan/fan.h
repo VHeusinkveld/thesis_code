@@ -7,15 +7,15 @@ struct sRotor {
     bool fan;	
     double rampT;		// Time to start up rotor
     double P, Prho;		// Power, powerdensity 
-    double R, W, A, V;	// Diameter, Thickness, Area ,Volume
+    double R, W, A, V;		// Diameter, Thickness, Area ,Volume
     double diaVol;		// Diagnosed rotor volume 
-    double x0, y0, z0;	// Origin of rotor
-    double xt, yt, zt;      // Translation angles
-    double theta, phi;	// Polar and Azimuthal angle 
-    double thetat, phit;    // Translation angles 
-    double Work;            // Work done by rotor
-    double cu;              // Characteristic velocity
-    bool rotate;            // Rotation yes or no
+    double x0, y0, z0;		// Origin of rotor
+    double xt, yt, zt;      	// Translation angles
+    double theta, phi;		// Polar and Azimuthal angle 
+    double thetat, phit;    	// Translation angles 
+    double Work;            	// Work done by rotor
+    double cu;              	// Characteristic velocity
+    bool rotate;            	// Rotation yes or no
     coord nf, nr;		// Normal vector fan, rotation 
 };
 
@@ -31,15 +31,15 @@ void init_rotor() {
     if(!rot.rampT)
     	rot.rampT = 1.;
     if(!rot.R)
-	rot.R = L0/160.;     
+	rot.R = 2.;     
     if(!rot.W)
 	rot.W = 0.3;    
     if(!rot.Prho)                  
-     	rot.Prho = 20.*L0;		
+     	rot.Prho = 500.;		
     if(!rot.x0)
     	rot.x0 = L0/2.;
     if(!rot.y0)
-	rot.y0 = L0/2.;
+	rot.y0 = 10.;
     if(!rot.z0){
         #if dimension == 2
             rot.z0 = 0.;
@@ -48,7 +48,7 @@ void init_rotor() {
         #endif
     }
     if(!rot.theta)
-    	rot.theta = 100*M_PI/180.;		// Polar angle
+    	rot.theta = 97*M_PI/180.;		// Polar angle
     if(!rot.phi)
     	rot.phi = 0.*M_PI/180.;		// Azimuthal angle 
 
@@ -57,7 +57,7 @@ void init_rotor() {
        	rot.yt = 0;
        	rot.zt = 0;
        	rot.thetat = 0.;
-     	rot.phit = -0.3*M_PI/180.;
+     	rot.phit = -0.001666*M_PI/180.;
     } else {
         rot.xt = 0;
         rot.yt = 0;
@@ -78,7 +78,7 @@ event forcing(i = 1; i++) {
 }
 
 /** Rotate the rotor */
-event rotate(t+=0.5) {
+event rotate(i++) {
     if(rot.rotate) { 
         // Change center  
         rot.x0 += rot.xt;
@@ -86,8 +86,8 @@ event rotate(t+=0.5) {
         rot.z0 += rot.zt;
 
         // Change angles 
-        rot.theta += rot.thetat;
-        rot.phi += rot.phit;
+        rot.theta += (dt/0.5)*rot.thetat;
+        rot.phi += (dt/0.5)*rot.phit;
 
         rotor_update();
     }
@@ -95,7 +95,6 @@ event rotate(t+=0.5) {
 
 /** Updating relevant rotor variables */
 void rotor_update() {
-   
     	rot.nf.x = sin(rot.theta)*cos(rot.phi);
 	rot.nf.z = sin(rot.theta)*sin(rot.phi);
 	rot.nf.y = cos(rot.theta);
@@ -124,15 +123,15 @@ void rotor_update() {
 
 /** Function returning the volume fractions of a fan object */
 void rotor_coord() {
-    	scalar sph[], plnu[], plnd[];
-   	fraction(sph, -sq((x - rot.x0)) - sq((y - rot.y0)) - sq((z - rot.z0)) + sq(rot.R));
-  	fraction(plnu,  rot.nr.x*(x - rot.x0) + rot.nr.y*(y - rot.y0) + rot.nr.z*(z - rot.z0) + rot.W/2.);
-   	fraction(plnd, -rot.nr.x*(x - rot.x0) - rot.nr.y*(y - rot.y0) - rot.nr.z*(z - rot.z0) + rot.W/2.);	
+    scalar sph[], plnu[], plnd[];
+    fraction(sph, -sq((x - rot.x0)) - sq((y - rot.y0)) - sq((z - rot.z0)) + sq(rot.R));
+    fraction(plnu,  rot.nr.x*(x - rot.x0) + rot.nr.y*(y - rot.y0) + rot.nr.z*(z - rot.z0) + rot.W/2.);
+    fraction(plnd, -rot.nr.x*(x - rot.x0) - rot.nr.y*(y - rot.y0) - rot.nr.z*(z - rot.z0) + rot.W/2.);	
 
-	foreach () {
-    		fan[] = sph[]*plnu[]*plnd[];
-   	}
-	boundary({fan});
+    foreach () {
+        fan[] = sph[]*plnu[]*plnd[];
+    }
+    boundary({fan});
 }
 
 /** Function returning new velocities based on a rotor forcing.
@@ -158,7 +157,7 @@ void rotor_forcing(){
 			 -1.*(u.x[] <  0)*(utemp > 0); 
 
 		u.x[] = usgn*sqrt(fabs(utemp));
-		//u.x[] = usgn*min(sqrt(fabs(utemp)), damp*1.5*rot.cu);
+		//u.x[] = usgn*min(sqrt(fabs(utemp)), damp*1.5*rot.cu); // Limiting the maximum speed
 
 	     }
 	}

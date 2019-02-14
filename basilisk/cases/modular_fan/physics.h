@@ -9,10 +9,10 @@
 #define karman 0.4      // von Karman constant 
 
 #define roughY0 0.1     // roughness length 
-#define WIND(s) -max((0.1*log(2.*(s-roughY0)+1.)),0.)   // log Wind profile 
+#define WIND(s) -max((0.15*log(2.*(s-roughY0)+1.)),0.)   // log Wind profile 
 
 #define QFLX (-0.001)			// -20 W/m2
-#define BSURF (1.5*b[] - 0.5*b[0, 1])   // Estimation of surface b
+#define BSURF (1.5*b[] - 0.5*b[0,1])   // Estimation of surface b
 #define GFLX (-Lambda*(BSURF - bd))
 double bd = 0., Lambda = 0.01;         // Grass coupling
 #define STRAT(s) gCONST/TREF*(log(30*s + a1 + 1.) - log(a1 + 1.)) + (QFLX/Lambda + bd)
@@ -120,12 +120,12 @@ event tracer_diffusion(i++){
     double flx = 0, bt = 0;
     double fctr = CP*TREF/gCONST;
     foreach_boundary(bottom reduction(+:flx) reduction(+:bt)) {
-        flx += (QFLX + GFLX) * sq(Delta);
-         bt += BSURF * sq(Delta);
+        flx = flx + (QFLX + GFLX) * sq(Delta);
+         bt = bt + BSURF * sq(Delta);
     }
-    bt /= sq(L0);
-    flx /= sq(L0);
-    fprintf(stderr, "%g %g %g %d\n", t, fctr*flx, fctr*bt, i);  
+    bt = bt/sq(L0);
+    flx = flx/sq(L0);
+    fprintf(stderr, "%g %g %g %d\n", t, fctr*flx, fctr*bt/CP, i);  
     
     mgb = diffusion(b, dt, mu, r = r);
 }

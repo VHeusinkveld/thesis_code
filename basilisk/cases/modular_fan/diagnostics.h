@@ -98,7 +98,7 @@ event diagnostics (t+=out.dtDiag){
 	rot.diaVol = dia.rotVol = 1.*tempVol;
 	dia.Ekin = 1.*tempEkin;
 	
-	/** Check if fan volume is within one percent of definition */
+	/** Check if fan volume is within twenty percent of definition */
 	if(fabs(dia.rotVol/rot.V - 1) > 0.20){
 		fprintf(stderr, "ERROR Check fan volume, V=%g, Vr=%g\n",rot.V, dia.rotVol);
 	}
@@ -216,7 +216,7 @@ event fanvelocity(t+=1) {
 	char nameStrvel[90];
     	snprintf(nameStrvel, 90, "%st=%05g", out.dir_strvel, t);
         FILE * fpstr = fopen(nameStrvel, "w");
-        fprintf(fpstr, "v, vx, vy, vz\n");
+        fprintf(fpstr, "R, v, vx, vy, vz\n");
         
 	double length = 70.;
         int ntot = 70;
@@ -232,13 +232,14 @@ event fanvelocity(t+=1) {
 	    double xx = xf0 + dist*rot.nf.x; 
 	    double yy = yf0 + dist*rot.nf.y; 
 	    double zz = zf0 + dist*rot.nf.z; 
-	
+            double rr = sqrt(sq(xx-xf0)+sq(yy-yf0)+sq(zz-zf0));	
+
 	    double valx = interpolate(u.x, xx, yy, zz);
 	    double valy = interpolate(u.y, xx, yy, zz);
 	    double valz = interpolate(u.z, xx, yy, zz);
           
             vels[n] = sqrt(sq(valx) + sq(valy) + sq(valz));
-	    fprintf(fpstr, "%g, %g, %g, %g\n", vels[n], valx, valy, valz);     
+	    fprintf(fpstr, "%g, %g, %g, %g, %g\n", rr, vels[n], valx, valy, valz);     
 	}  
  	fclose(fpstr); 
     }

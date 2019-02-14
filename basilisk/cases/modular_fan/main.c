@@ -24,10 +24,10 @@ char sim_var[] = "theta";  		// Notes if a variable is varied over runs
 
 /** Initialisation */
 int main() {	
-    minlevel = 5;
+    minlevel = 4	;
     maxlevel = 8;
 
-    L0 = 200.;
+    L0 = 400.;
     X0 = Y0 = Z0 = 0.;
 
     // Possibility to run for variable changes
@@ -71,7 +71,7 @@ event init(t=0) {
         init_rotor();
     }
         
-    while(adapt_wavelet((scalar *){fan,u,b},(double []){0.,eps,eps,eps,.4*9.81/273},maxlevel,minlevel).nf) {
+    while(adapt_wavelet((scalar *){fan,u,b},(double []){0.,eps,eps,eps,0.3*9.81/273},maxlevel,minlevel).nf) {
 	foreach() {
 	    b[] = STRAT(y);
             u.x[] = WIND(y);
@@ -90,7 +90,7 @@ event init_change(i=10) {
 
 /** Adaptivity */
 event adapt(i++) {
-    adapt_wavelet((scalar *){fan,u,b},(double []){0.,eps,eps,eps,.4*9.81/273},maxlevel,minlevel);
+    adapt_wavelet((scalar *){fan,u,b},(double []){0.,eps,eps,eps,0.4*9.81/273},maxlevel,minlevel);
 }
 
 /** Progress event */

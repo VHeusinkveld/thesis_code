@@ -35,7 +35,7 @@ void init_rotor() {
     if(!rot.W)
 	rot.W = 0.3;    
     if(!rot.Prho)                  
-     	rot.Prho = 500.;		
+     	rot.Prho = 1000.;		
     if(!rot.x0)
     	rot.x0 = L0/2.;
     if(!rot.y0)
@@ -139,7 +139,28 @@ This is a function of powerdensity, width, direction, ramp-time, and diagnosed v
 void rotor_forcing(){
     double tempW = 0.;
     double w, wsgn, damp, usgn, utemp, corrP;
-    foreach(reduction(+:tempW)) {		
+
+    Point point = locate(rot.x0, rot.y0, rot.z0);
+    if(fan[] == 0.){
+	foreach_dimension(){    	
+             //Work in respective direction 
+	     wsgn = sign(rot.nf.x*u.x[]) + (sign(rot.nf.x*u.x[]) == 0)*sign(rot.nf.x);
+	     damp = rot.rampT > t ? t/rot.rampT : 1.;
+	     w = wsgn*damp*sq(rot.nf.x)*(2.)*(rot.P/rot.V)*dt;
+	     tempW += 0.5*w*pow(Delta, 3);
+	
+	     // New kinetic energy
+	      utemp = sq(u.x[]) + w;
+	      usgn =   1.*(u.x[] >= 0)*(utemp > 0) +
+	              -1.*(u.x[] >= 0)*(utemp < 0) +
+	     	       1.*(u.x[] <  0)*(utemp < 0) +
+	     	      -1.*(u.x[] <  0)*(utemp > 0); 
+
+	      u.x[] = usgn*sqrt(fabs(utemp));
+         }
+     } else {
+
+     foreach(reduction(+:tempW)) {		
         if(fan[] > 0.) {
             foreach_dimension() {
 	        // Work in respective direction 
@@ -158,9 +179,9 @@ void rotor_forcing(){
 
 		u.x[] = usgn*sqrt(fabs(utemp));
 		//u.x[] = usgn*min(sqrt(fabs(utemp)), damp*1.5*rot.cu); // Limiting the maximum speed
-
 	     }
 	}
+    }
     }
     rot.Work += tempW;
 }

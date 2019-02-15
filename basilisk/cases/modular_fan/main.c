@@ -13,10 +13,10 @@
 /** Global variables */
 int minlevel, maxlevel;         	// Grid depths
 double meps, eps;			// Maximum error and error in u fields
-double TEND = 900.;
+double TEND = 1200.;
 
-char sim_ID[] = "rotation";		// Simulation identifier
-char sim_var[] = "theta";  		// Notes if a variable is varied over runs
+char sim_ID[] = "krab";		        // Simulation identifier
+char sim_var[] = "None";  		// Notes if a variable is varied over runs
 
 #include "physics.h"			// Physics of the simulation 
 #include "fan.h"			// Include a fan
@@ -24,14 +24,14 @@ char sim_var[] = "theta";  		// Notes if a variable is varied over runs
 
 /** Initialisation */
 int main() {	
-    minlevel = 4	;
-    maxlevel = 8;
+    minlevel = 4;
+    maxlevel = 9;
 
     L0 = 400.;
     X0 = Y0 = Z0 = 0.;
 
     // Possibility to run for variable changes
-    for(rot.theta=97.*M_PI/180.; rot.theta<=98.*M_PI/180.; rot.theta+=100.*M_PI/180.) {
+    for(rot.theta=97.*M_PI/180.; rot.theta<=110.*M_PI/180.; rot.theta+=100.*M_PI/180.) {
         init_grid(1<<6);
 	a = av; 
 
@@ -59,19 +59,19 @@ int main() {
 /** Initialisation */
 event init(t=0) {
     rot.fan = true;		// Yes we want a fan
-    rot.rotate = false;		// If we want it to rotate 
+    rot.rotate = true;		// If we want it to rotate 
 
     rot.phi = 0;		// Reset for different runs
-    eps = .7;
+    eps = .6;
     
     init_physics();
 
     if(rot.fan) {
-	rotor_coord();
         init_rotor();
+	rotor_coord();
     }
         
-    while(adapt_wavelet((scalar *){fan,u,b},(double []){0.,eps,eps,eps,0.3*9.81/273},maxlevel,minlevel).nf) {
+    while(adapt_wavelet((scalar *){fan,u,b},(double []){0.,eps,eps,eps,0.38*9.81/273},maxlevel,minlevel).nf) {
 	foreach() {
 	    b[] = STRAT(y);
             u.x[] = WIND(y);
@@ -90,7 +90,7 @@ event init_change(i=10) {
 
 /** Adaptivity */
 event adapt(i++) {
-    adapt_wavelet((scalar *){fan,u,b},(double []){0.,eps,eps,eps,0.4*9.81/273},maxlevel,minlevel);
+    adapt_wavelet((scalar *){fan,u,b},(double []){0.,eps,eps,eps,0.38*9.81/273},maxlevel,minlevel);
 }
 
 /** Progress event */

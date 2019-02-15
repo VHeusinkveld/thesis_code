@@ -43,6 +43,7 @@ struct sOutput {
     char dir_equifields[60];
     char dir_strvel[60];
     char dir_diffbins[60];
+    char dir_dts[60];
     int sim_i;
 };
 
@@ -54,9 +55,9 @@ struct sbViewSettings {
 };
 
 /** Initialize structures */
-struct sOutput out = {.dtDiag = 0.2, .dtVisual=0.1, .dtSlices=120., .dtProfile=60., .main_dir="results", .sim_i=0};
+struct sOutput out = {.dtDiag = 1., .dtVisual=1., .dtSlices=60., .dtProfile=60., .main_dir="results", .sim_i=0};
 
-struct sEquiDiag ediag = {.level = 5, .ii = 0, .startDiag = 0., .dtDiag = 2., .dtOutput = 60.};
+struct sEquiDiag ediag = {.level = 5, .ii = 0, .startDiag = 0., .dtDiag = 0., .dtOutput = 0.};
 
 struct sbViewSettings bvsets = {.phi=0., .theta=0., .sphi=0., .stheta=0.};
 
@@ -159,7 +160,7 @@ event equioutputs(t = (ediag.dtOutput + ediag.startDiag); t += ediag.dtOutput) {
     free(equifield);				// We dont want memory leaks 
     equifield = NULL;				// Reset equifield pointer
 }
-
+/*
 event tempbinning(t+=1) {
     double Tmax =  2;
     double Tmin = -2;
@@ -177,7 +178,7 @@ event tempbinning(t+=1) {
 #else 
     foreach(reduction(+:binnorm)) {
 #endif
-	double Tdif = TREF/gCONST*(b[] - STRAT(y)); // TODO think about removing linaer term
+	double Tdif = TREF/gCONST*(b[] - STRAT(y)); // TODO think about removing linear term
 	int place = round((Tdif + fabs(Tmin))/Tstep);
 
 	place = place < 0 ? 0 : place;
@@ -209,8 +210,8 @@ event tempbinning(t+=1) {
     }
 
 }
-
-event fanvelocity(t+=1) {
+*/
+event fanvelocity(t+=10) {
     if(pid() == 0) {
     if(rot.fan) {
 	char nameStrvel[90];
@@ -245,6 +246,58 @@ event fanvelocity(t+=1) {
     }
     }
 }
+
+event dts_meas(t += 20) {
+    if(pid() == 0) {
+	char nameDtshor[90];
+    	snprintf(nameDtshor, 90, "%shor_t=%05g", out.dir_dts, t);
+        FILE * fpstrhor = fopen(nameDtshor, "w");
+        fprintf(fpstrhor, "x, y, z, b\n");
+        
+	double lengthhor = L0;
+        int ntothor = L0;
+	
+	double xf0 = rot.x0;
+	double yf0 = rot.y0;
+	double zf0 = rot.z0;
+
+	for(int n = 0; n <= ntothor; n++) {
+	    double dist = lengthhor*n/ntothor;
+
+	    double xx = dist; 
+	    double yy = 1.; 
+	    double zz = zf0; 
+       
+	    double valb = interpolate(b, xx, yy, zz);
+          
+	    fprintf(fpstrhor, "%g, %g, %g, %g\n", xx, yy, zz, valb);     
+	}  
+ 	fclose(fpstrhor); 
+
+	char nameDtsver[90];
+    	snprintf(nameDtsver, 90, "%sver_t=%05g", out.dir_dts, t);
+        FILE * fpstrver = fopen(nameDtsver, "w");
+        fprintf(fpstrver, "x, y, z, b\n");
+        
+	double lengthver = 20;
+        int ntotver = 200;
+
+	for(int n = 0; n <= ntotver; n++) {
+	    double dist = lengthver*n/ntotver;
+
+	    double xx = xf0 + 30; 
+	    double yy = dist; 
+	    double zz = zf0; 
+       
+	    double valb = interpolate(b, xx, yy, zz);
+          
+	    fprintf(fpstrver, "%g, %g, %g, %g\n", xx, yy, zz, valb);     
+	}  
+ 	fclose(fpstrver); 
+    }
+    
+}
+
 
 #endif
 
@@ -325,24 +378,34 @@ event slices(t=out.dtSlices; t+=out.dtSlices) {
     char nameSlice[90];
     coord slice = {1., 0., 1.};
 
-    for(double yTemp = rot.y0-30.; yTemp<=rot.y0+20.; yTemp+=5.) {
+    for(double yTemp = 0; yTemp<=4; yTemp+=0.5) {
 	slice.y = yTemp/L0;
    
     	snprintf(nameSlice, 90, "%st=%05gy=%03g", out.dir_slices, t, yTemp);
     	FILE * fpsli = fopen(nameSlice, "w");
-    	output_slice(list = (scalar *){b}, fp = fpsli, n = 64, linear = true, plane=slice);
+    	output_slice(list = (scalar *){b}, fp = fpsli, n = 256, linear = true, plane=slice);
     	fclose(fpsli);
     }
 
+    for(double yTemp = 4; yTemp<=rot.y0+6.; yTemp+=2.) {
+	slice.y = yTemp/L0;
+   
+    	snprintf(nameSlice, 90, "%st=%05gy=%03g", out.dir_slices, t, yTemp);
+    	FILE * fpsli = fopen(nameSlice, "w");
+    	output_slice(list = (scalar *){b}, fp = fpsli, n = 256, linear = true, plane=slice);
+    	fclose(fpsli);
+    }
+
+/*
     slice.y = 1.;
     slice.z = 1.;
 
-    for(double xTemp = rot.x0-10.; xTemp<=rot.x0+25.; xTemp+=5.) {
+    for(double xTemp = rot.x0-40; xTemp<=rot.x0+40.; xTemp+=20.) {
 	slice.x = xTemp/L0;
 	
 	snprintf(nameSlice, 90, "%st=%05gx=%03g", out.dir_slices, t, xTemp);
 	FILE * fpsli = fopen(nameSlice, "w");
-	output_slice(list = (scalar *){b}, fp = fpsli, n = 64, linear = true, plane=slice);
+	output_slice(list = (scalar *){b}, fp = fpsli, n = 256, linear = true, plane=slice);
 	fclose(fpsli);
 	}
 
@@ -352,9 +415,9 @@ event slices(t=out.dtSlices; t+=out.dtSlices) {
     	
     snprintf(nameSlice, 90, "%st=%05gz=%03g", out.dir_slices, t, rot.z0);
     FILE * fpsli = fopen(nameSlice, "w");
-    output_slice(list = (scalar *){b}, fp = fpsli, n = 64, linear = true, plane=slice);
+    output_slice(list = (scalar *){b}, fp = fpsli, n = 256, linear = true, plane=slice);
     fclose(fpsli);
-
+*/
 }
 #endif
 
@@ -369,6 +432,7 @@ void sim_dir_create(){
     sprintf(out.dir_equifields, "%s/equifields/", out.dir);
     sprintf(out.dir_strvel, "%s/strvel/", out.dir);
     sprintf(out.dir_diffbins, "%s/diffbins/", out.dir);
+    sprintf(out.dir_dts, "%s/dts/", out.dir);
 
     
     if (pid() == 0){
@@ -395,6 +459,10 @@ void sim_dir_create(){
     if (stat(out.dir_diffbins, &st) == -1) {
 	mkdir(out.dir_diffbins, 0777);
     }
+    if (stat(out.dir_dts, &st) == -1) {
+	mkdir(out.dir_dts, 0777);
+    }
+
     }
 }
 

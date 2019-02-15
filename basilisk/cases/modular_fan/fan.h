@@ -29,7 +29,7 @@ void rotor_forcing();
 void init_rotor() {
     rot.Work = 0.;
     if(!rot.rampT)
-    	rot.rampT = 1.;
+    	rot.rampT = 20.;
     if(!rot.R)
 	rot.R = 2.;     
     if(!rot.W)
@@ -57,7 +57,7 @@ void init_rotor() {
        	rot.yt = 0;
        	rot.zt = 0;
        	rot.thetat = 0.;
-     	rot.phit = -0.001666*M_PI/180.;
+     	rot.phit = -2*M_PI/240;
     } else {
         rot.xt = 0;
         rot.yt = 0;
@@ -79,18 +79,16 @@ event forcing(i = 1; i++) {
 
 /** Rotate the rotor */
 event rotate(i++) {
-    if(rot.rotate) { 
-        // Change center  
-        rot.x0 += rot.xt;
-        rot.y0 += rot.yt;
-        rot.z0 += rot.zt;
+    // Change center  
+    rot.x0 += rot.xt;
+    rot.y0 += rot.yt;
+    rot.z0 += rot.zt;
 
-        // Change angles 
-        rot.theta += (dt/0.5)*rot.thetat;
-        rot.phi += (dt/0.5)*rot.phit;
+    // Change angles 
+    rot.theta += dt*rot.thetat;
+    rot.phi += dt*rot.phit;
 
-        rotor_update();
-    }
+    rotor_update();
 }
 
 /** Updating relevant rotor variables */
@@ -156,7 +154,9 @@ void rotor_forcing(){
 	     	       1.*(u.x[] <  0)*(utemp < 0) +
 	     	      -1.*(u.x[] <  0)*(utemp > 0); 
 
-	      u.x[] = usgn*sqrt(fabs(utemp));
+	      //u.x[] = usgn*sqrt(fabs(utemp));
+              u.x[] = usgn*min(sqrt(fabs(utemp)), sq(damp)*1.5*rot.cu); // Limiting the maximum speed
+
          }
      } else {
 
@@ -177,8 +177,8 @@ void rotor_forcing(){
 			  1.*(u.x[] <  0)*(utemp < 0) +
 			 -1.*(u.x[] <  0)*(utemp > 0); 
 
-		u.x[] = usgn*sqrt(fabs(utemp));
-		//u.x[] = usgn*min(sqrt(fabs(utemp)), damp*1.5*rot.cu); // Limiting the maximum speed
+		//u.x[] = usgn*sqrt(fabs(utemp));
+		u.x[] = usgn*min(sqrt(fabs(utemp)), damp*1.5*rot.cu); // Limiting the maximum speed
 	     }
 	}
     }

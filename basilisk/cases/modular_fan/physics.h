@@ -9,7 +9,7 @@
 #define karman 0.4      // von Karman constant 
 
 #define roughY0 0.1     // roughness length 
-#define WIND(s) -max((0.15*log(2.*(s-roughY0)+1.)),0.)   // log Wind profile 
+#define WIND(s) -max((0.2*log(2.*(s-roughY0)+1.)),0.)   // log Wind profile 
 
 #define QFLX (-0.001)			// -20 W/m2
 #define BSURF (1.5*b[] - 0.5*b[0,1])   // Estimation of surface b
@@ -37,7 +37,6 @@ void init_physics(){
 
 	b.nodump = false; // TODO
 
-	// redundant if elif function TODO
 	if(def.wind == 0.){    	
 	    u.n[bottom] = dirichlet(0.);
 	    u.t[bottom] = dirichlet(0.);
@@ -49,8 +48,8 @@ void init_physics(){
 	} else if(fabs(def.wind) > 0.) {
 	    u.n[bottom] = dirichlet(0.);
 	    u.t[bottom] = dirichlet(0.);
-	    u.n[top] = dirichlet(WIND(y));
- 	    u.t[top] = neumann(0.);
+	    u.n[top] = dirichlet(0);
+ 	    u.t[top] = dirichlet(WIND(y));
 
             periodic (left);
 		
@@ -76,6 +75,26 @@ void init_physics(){
 	}
 }
 
+double lut[20];
+event init (t = 0){
+    lut[0] = 0.; //level > 0
+    for (int m = 1; m <= 19; m++)
+        lut[m] = sq(karman/log(L0/(((double)(1<<m))*roughY0)-1.));
+}
+
+#define dvdt(u) (sign(u)*lut[level]*sq(u)/Delta)
+
+event law_of_the_wall(i++){
+    double ui; //scratch for the mid-point-value estimate 
+    foreach_boundary(bottom){
+        ui = u.x[] - (dt*dvdt(u.x[])/2.); 
+        u.x[] -= dt*dvdt(ui);
+        ui = u.z[] - (dt*dvdt(u.z[])/2.);
+        u.z[] -= dt*dvdt(ui);
+    }
+}
+
+
 /* Gravity forcing */
 event acceleration(i++){
 	foreach_face(y){
@@ -85,11 +104,10 @@ event acceleration(i++){
 
 event inflow(i++){
     double sides = 0.1;
-    double relaxtime = dt/10.;
+    double relaxtime = dt/5.;
     foreach(){
 	if((x < sides*L0 || x > (1-sides)*L0 || 
 	    z < sides*L0 || z > (1-sides)*L0   )) {
-	    
 	    u.x[] = u.x[] + (WIND(y)-u.x[])*relaxtime;
 	    u.y[] = u.y[] - u.y[]*relaxtime;
             u.z[] = u.z[] - u.z[]*relaxtime;
@@ -106,7 +124,7 @@ event tracer_diffusion(i++){
     /*
     foreach_face(){
 	if(y < Y0 + 1E-10){
-            muz.x[] = 0.;
+            muz.x[] = 1.*mu.x[];
    	} else {
 	    muz.x[] = 1.*mu.x[];
         }
@@ -117,6 +135,7 @@ event tracer_diffusion(i++){
         if (y < Delta)
             r[] = (QFLX + GFLX)/sq(Delta); // div needed as normalization 
     }
+    /*
     double flx = 0, bt = 0;
     double fctr = CP*TREF/gCONST;
     foreach_boundary(bottom reduction(+:flx) reduction(+:bt)) {
@@ -126,6 +145,6 @@ event tracer_diffusion(i++){
     bt = bt/sq(L0);
     flx = flx/sq(L0);
     fprintf(stderr, "%g %g %g %d\n", t, fctr*flx, fctr*bt/CP, i);  
-    
+    */
     mgb = diffusion(b, dt, mu, r = r);
 }

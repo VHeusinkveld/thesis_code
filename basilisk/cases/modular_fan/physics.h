@@ -8,21 +8,24 @@
 #define INVERSION .2 	// Kelvin per meter
 #define karman 0.4      // von Karman constant 
 
-#define roughY0 0.1     // roughness length 
-#define WIND(s) -max((0.2*log(2.*(s-roughY0)+1.)),0.)   // log Wind profile 
+#define roughY0u 0.1    // roughness wind length 
+#define roughY0h 0.01     // roughness heat length 
+#define WIND(s) -max((0.25*log(2.*(s-roughY0u)+1.)),0.)   // log Wind profile 
 
-#define QFLX (-0.001)			// -20 W/m2
-#define BSURF (1.5*b[] - 0.5*b[0,1])   // Estimation of surface b
+#define QFLX 0. 	// 0 (0.001 = 20wm2)
+#define BSURF ((b[0,1]-b[]*lut2[level])/(1.-lut2[level]))  // log estimate of surface b
+//linear (1.5*b[] - 0.5*b[0,1])   // Estimation of surface b
 #define GFLX (-Lambda*(BSURF - bd))
-double bd = 0., Lambda = 0.01;         // Grass coupling
+double Lambda = 0.005, bd = 0.;   // Grass coupling
 #define STRAT(s) gCONST/TREF*(log(30*s + a1 + 1.) - log(a1 + 1.)) + (QFLX/Lambda + bd)
 double a1 = 0.;
 
 
-double crho = 1.;
 scalar b[];
 scalar * tracers = {b};
-	
+
+double crho = 1.;	
+
 face vector av[]; 
 struct sCase def;
 
@@ -76,10 +79,20 @@ void init_physics(){
 }
 
 double lut[20];
-event init (t = 0){
-    lut[0] = 0.; //level > 0
-    for (int m = 1; m <= 19; m++)
-        lut[m] = sq(karman/log(L0/(((double)(1<<m))*roughY0)-1.));
+double lut2[20];
+event init (t = 0) {
+    for (int m = 0; m <= 19; m++) {
+	double d  = (L0/((double)(1 << m)))/roughY0u;
+	double d2 = (L0/((double)(1 << m)))/roughY0h;
+
+        if (m==0) {
+	    lut[0] = 0;
+	    lut2[0] = 0;
+	} else {
+            lut[m] = sq(karman/log(L0/d - 1.));
+	}
+        lut2[m] = (log(4.*d2) - 1.)/(log(d2) - 1.);
+    }
 }
 
 #define dvdt(u) (sign(u)*lut[level]*sq(u)/Delta)
@@ -103,21 +116,25 @@ event acceleration(i++){
 }
 
 event inflow(i++){
-    double sides = 0.1;
-    double relaxtime = dt/5.;
+    double sides = 0.04;
+    double relaxtime = dt/40.;
     foreach(){
 	if((x < sides*L0 || x > (1-sides)*L0 || 
 	    z < sides*L0 || z > (1-sides)*L0   )) {
 	    u.x[] = u.x[] + (WIND(y)-u.x[])*relaxtime;
 	    u.y[] = u.y[] - u.y[]*relaxtime;
             u.z[] = u.z[] - u.z[]*relaxtime;
- 	    b[] = b[] + (STRAT(y) - b[])*relaxtime;
 	}
+	if((x < sides*L0 || x > (1-1.5*sides)*L0 || 
+	    z < sides*L0 || z > (1-1.5*sides)*L0)) {
+ 	    b[] = b[] + (STRAT(y) - b[])*relaxtime/1.5;
+	}
+
     }
 }
 
 mgstats mgb;
-//face vector muz;
+//face vector muz; This is taken care of by Evis
 /* Diffusion */
 event tracer_diffusion(i++){
     scalar r[];

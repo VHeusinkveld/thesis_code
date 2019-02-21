@@ -42,11 +42,12 @@ struct sOutput {
     char dir_slices[60];
     char dir_equifields[60];
     char dir_strvel[60];
+    char dir_refvel[60];
     char dir_diffbins[60];
     char dir_dts[60];
     int sim_i;
 };
-
+	
 struct sbViewSettings {
     double phi; 			// Phi for 3D bview movie
     double theta;			// Theta for 3D bview movie
@@ -55,7 +56,7 @@ struct sbViewSettings {
 };
 
 /** Initialize structures */
-struct sOutput out = {.dtDiag = 1., .dtVisual=1., .dtSlices=60., .dtProfile=60., .main_dir="results", .sim_i=0};
+struct sOutput out = {.dtDiag = 1., .dtVisual=1., .dtSlices=5., .dtProfile=60., .main_dir="results", .sim_i=0};
 
 struct sEquiDiag ediag = {.level = 5, .ii = 0, .startDiag = 0., .dtDiag = 0., .dtOutput = 0.};
 
@@ -83,8 +84,9 @@ event diagnostics (t+=out.dtDiag){
 		reduction(max:maxVel) reduction(+:bEnergy) reduction(+:tempDiss)) {
 
 		tempVol += dv()*fan[];
-		bEnergy += dv()*y*(b[] - STRAT(y));
-		
+		if(y + Delta/2. <= rot.y0){
+		     bEnergy += dv()*y*(b[] - STRAT(y));
+		}
 		foreach_dimension() {
 			ekin[] += sq(u.x[]);
 		}
@@ -100,9 +102,10 @@ event diagnostics (t+=out.dtDiag){
 	dia.Ekin = 1.*tempEkin;
 	
 	/** Check if fan volume is within twenty percent of definition */
-	if(fabs(dia.rotVol/rot.V - 1) > 0.20){
-		fprintf(stderr, "ERROR Check fan volume, V=%g, Vr=%g\n",rot.V, dia.rotVol);
-	}
+	// This piece of code got semi redundant, fan also performs if Vdia == 0
+	//if(fabs(dia.rotVol/rot.V - 1) > 0.20){
+	//	fprintf(stderr, "ERROR Check fan volume, V=%g, Vr=%g\n",rot.V, dia.rotVol);
+	//}
 	
 	if (pid() == 0){
 	/** Write away simulation data and case setup for main thread */ 
@@ -114,9 +117,9 @@ event diagnostics (t+=out.dtDiag){
 	static FILE * fpca = fopen(nameCase, "w");
 
 	if(t==0.){
-		fprintf(fpca,"L0\tinversion\tTref\txr\tyr\tzr\ttheta\tphi\tr\tW\tP\tcu\trampT\tmaxlvl\tminlvl\teps\n");
-		fprintf(fpca, "%g\t%g\t%g\t%g\t%g\t%g\t%g\t%g\t%g\t%g\t%g\t%g\t%g\t%d\t%d\t%g\n", 
-				L0, INVERSION, TREF, rot.x0, rot.y0, rot.z0, rot.theta, rot.phi, rot.R, rot.W, rot.P, rot.cu, rot.rampT, maxlevel, minlevel, eps);
+		fprintf(fpca,"L0\tinversion\thubU\tTref\txr\tyr\tzr\ttheta\tphi\tr\tW\tP\tcu\trampT\tmaxlvl\tminlvl\teps\n");
+		fprintf(fpca, "%g\t%g\t%g\t%g%g\t\t%g\t%g\t%g\t%g\t%g\t%g\t%g\t%g\t%g\t%d\t%d\t%g\n", 
+				L0,TREF/gCONST*STRAT(rot.y0)-STRAT(1.5), WIND(rot.y0),TREF, rot.x0, rot.y0, rot.z0, rot.theta, rot.phi, rot.R, rot.W, rot.P, rot.cu, rot.rampT, maxlevel, minlevel, eps);
 		
 	        fprintf(stderr,"n\tred\tEkin\tWork\tbE\n");
 		fprintf(fpout,"i\tt\tn\tred\tEkin\tWork\tbE\n");
@@ -211,48 +214,84 @@ event tempbinning(t+=1) {
 
 }
 */
-event fanvelocity(t+=10) {
+event fanvelocity(t+=1) {
     if(pid() == 0) {
-    if(rot.fan) {
-	char nameStrvel[90];
-    	snprintf(nameStrvel, 90, "%st=%05g", out.dir_strvel, t);
-        FILE * fpstr = fopen(nameStrvel, "w");
-        fprintf(fpstr, "R, v, vx, vy, vz\n");
+    char nameStrvel[90];
+    snprintf(nameStrvel, 90, "%st=%05g", out.dir_strvel, t);
+    FILE * fpstr = fopen(nameStrvel, "w");
+    fprintf(fpstr, "R,v,vx,vy,vz\n");
         
-	double length = 70.;
-        int ntot = 70;
-	double vels[ntot];	
+    double length = 200;
+    int ntot = 200;
+    double vels1[ntot];	
 
-	double xf0 = rot.x0;
-	double yf0 = rot.y0;
-	double zf0 = rot.z0;
+    double xf0 = rot.x0;
+    double yf0 = rot.y0;
+    double zf0 = rot.z0;
 
-	for(int n; n < ntot; n++) {
-	    double dist = length*n/ntot;
+    for(int n; n < ntot; n++) {
+	double dist = length*n/ntot - 100;
+	double phi = dist < 0 ? M_PI/360. : 0.;
+	double theta = 97*M_PI/180;
 
-	    double xx = xf0 + dist*rot.nf.x; 
-	    double yy = yf0 + dist*rot.nf.y; 
-	    double zz = zf0 + dist*rot.nf.z; 
-            double rr = sqrt(sq(xx-xf0)+sq(yy-yf0)+sq(zz-zf0));	
+	double nfx1 = sin(theta)*cos(phi);
+	double nfz1 = sin(theta)*sin(phi);
+	double nfy1 = cos(theta);
 
-	    double valx = interpolate(u.x, xx, yy, zz);
-	    double valy = interpolate(u.y, xx, yy, zz);
-	    double valz = interpolate(u.z, xx, yy, zz);
-          
-            vels[n] = sqrt(sq(valx) + sq(valy) + sq(valz));
-	    fprintf(fpstr, "%g, %g, %g, %g, %g\n", rr, vels[n], valx, valy, valz);     
-	}  
- 	fclose(fpstr); 
-    }
+	double xx1 = xf0 + dist*nfx1; 
+	double yy1 = yf0 + dist*nfz1; 
+	double zz1 = zf0 + dist*nfy1; 
+        // double rr = sqrt(sq(xx-xf0)+sq(yy-yf0)+sq(zz-zf0));	
+
+	double valx1 = interpolate(u.x, xx1, yy1, zz1);
+	double valy1 = interpolate(u.y, xx1, yy1, zz1);
+	double valz1 = interpolate(u.z, xx1, yy1, zz1);
+         
+        vels1[n] = sqrt(sq(valx1) + sq(valy1) + sq(valz1));
+	fprintf(fpstr, "%g,%g,%g,%g,%g\n", dist, vels1[n], valx1, valy1, valz1);     
+    }  
+    fclose(fpstr); 
     }
 }
 
-event dts_meas(t += 20) {
+event refvelocity(t+=1) {
+    if(pid() == 0) {
+    char nameRefvel[90];
+    snprintf(nameRefvel, 90, "%st=%05g", out.dir_refvel, t);
+    FILE * fpstr = fopen(nameRefvel, "w");
+    fprintf(fpstr, "x,v,vx,vy,vz\n");
+        
+    double length = L0;
+    int ntot = L0/2;
+    double vels1[ntot];	
+
+    double xf0 = 0;
+    double yf0 = 3;
+    double zf0 = L0/2;
+
+    for(int n; n < ntot; n++) {
+	double dist = length*n/ntot;
+	double xx = xf0 + dist; 
+	double yy = yf0; 
+	double zz = zf0; 
+
+	double valx1 = interpolate(u.x, xx, yy, zz);
+	double valy1 = interpolate(u.y, xx, yy, zz);
+	double valz1 = interpolate(u.z, xx, yy, zz);
+         
+        vels1[n] = sqrt(sq(valx1) + sq(valy1) + sq(valz1));
+	fprintf(fpstr, "%g,%g,%g,%g,%g\n", xx, vels1[n], valx1, valy1, valz1);     
+    }  
+    fclose(fpstr); 
+    }
+}
+
+event dts_meas(t += 1) {
     if(pid() == 0) {
 	char nameDtshor[90];
     	snprintf(nameDtshor, 90, "%shor_t=%05g", out.dir_dts, t);
         FILE * fpstrhor = fopen(nameDtshor, "w");
-        fprintf(fpstrhor, "x, y, z, b\n");
+        fprintf(fpstrhor, "x,y,z,b\n");
         
 	double lengthhor = L0;
         int ntothor = L0;
@@ -270,14 +309,14 @@ event dts_meas(t += 20) {
        
 	    double valb = interpolate(b, xx, yy, zz);
           
-	    fprintf(fpstrhor, "%g, %g, %g, %g\n", xx, yy, zz, valb);     
+	    fprintf(fpstrhor, "%g,%g,%g,%g\n", xx, yy, zz, valb);     
 	}  
  	fclose(fpstrhor); 
 
 	char nameDtsver[90];
     	snprintf(nameDtsver, 90, "%sver_t=%05g", out.dir_dts, t);
         FILE * fpstrver = fopen(nameDtsver, "w");
-        fprintf(fpstrver, "x, y, z, b\n");
+        fprintf(fpstrver, "x,y,z,b\n");
         
 	double lengthver = 20;
         int ntotver = 200;
@@ -291,7 +330,7 @@ event dts_meas(t += 20) {
        
 	    double valb = interpolate(b, xx, yy, zz);
           
-	    fprintf(fpstrver, "%g, %g, %g, %g\n", xx, yy, zz, valb);     
+	    fprintf(fpstrver, "%g,%g,%g,%g\n", xx, yy, zz, valb);     
 	}  
  	fclose(fpstrver); 
     }
@@ -328,11 +367,11 @@ event movies(t += out.dtVisual) {
     lambda2(u,l2);
     boundary({l2});
     
-    view(fov=20, tx = 0., ty = 0., phi=bvsets.phi, theta=bvsets.theta, width = 800, height = 800);
+    view(fov=25, tx = 0., ty = 0., phi=bvsets.phi, theta=bvsets.theta, width = 800, height = 800);
     
     translate(-rot.x0,-rot.y0,-rot.z0) {
         box(notics=false);
-        isosurface("l2", v=-0.05, color="b", min=STRAT(0.), max=STRAT(2.*rot.y0));
+        isosurface("l2", v=-0.02, color="b", min=STRAT(0.), max=STRAT(2.*rot.y0));
 	draw_vof("fan", fc = {1,0,0});
     }
     translate(-rot.z0,-rot.y0, -L0){
@@ -350,11 +389,11 @@ event movies(t += out.dtVisual) {
     save(nameVid1);
     clear();
 
-    view(fov=20, tx = 0., ty = 0., phi=bvsets.phi, theta=bvsets.theta, width = 800, height = 800);
+    view(fov=25, tx = 0., ty = 0., phi=bvsets.phi, theta=bvsets.theta, width = 800, height = 800);
     
     translate(-rot.x0,-rot.y0,-rot.z0) {
         box(notics=false);
-        isosurface("l2", v=-0.05, color="b", min=STRAT(0.), max=STRAT(1.5*rot.y0));
+        isosurface("l2", v=-0.02, color="b", min=STRAT(0.), max=STRAT(1.5*rot.y0));
 	draw_vof("fan", fc = {1,0,0});
     }
     translate(-rot.z0,-rot.y0, -L0){
@@ -378,7 +417,7 @@ event slices(t=out.dtSlices; t+=out.dtSlices) {
     char nameSlice[90];
     coord slice = {1., 0., 1.};
 
-    for(double yTemp = 0; yTemp<=4; yTemp+=0.5) {
+    for(double yTemp = 0.5; yTemp<=1; yTemp+=0.5) {
 	slice.y = yTemp/L0;
    
     	snprintf(nameSlice, 90, "%st=%05gy=%03g", out.dir_slices, t, yTemp);
@@ -387,7 +426,7 @@ event slices(t=out.dtSlices; t+=out.dtSlices) {
     	fclose(fpsli);
     }
 
-    for(double yTemp = 4; yTemp<=rot.y0+6.; yTemp+=2.) {
+    for(double yTemp = 2; yTemp<=2.; yTemp+=2.) {
 	slice.y = yTemp/L0;
    
     	snprintf(nameSlice, 90, "%st=%05gy=%03g", out.dir_slices, t, yTemp);
@@ -431,6 +470,7 @@ void sim_dir_create(){
     sprintf(out.dir_slices, "%s/slices/", out.dir);
     sprintf(out.dir_equifields, "%s/equifields/", out.dir);
     sprintf(out.dir_strvel, "%s/strvel/", out.dir);
+    sprintf(out.dir_refvel, "%s/refvel/", out.dir);
     sprintf(out.dir_diffbins, "%s/diffbins/", out.dir);
     sprintf(out.dir_dts, "%s/dts/", out.dir);
 
@@ -455,6 +495,9 @@ void sim_dir_create(){
     }  
     if (stat(out.dir_strvel, &st) == -1) {
 	mkdir(out.dir_strvel, 0777);
+    }
+    if (stat(out.dir_refvel, &st) == -1) {
+	mkdir(out.dir_refvel, 0777);
     }
     if (stat(out.dir_diffbins, &st) == -1) {
 	mkdir(out.dir_diffbins, 0777);

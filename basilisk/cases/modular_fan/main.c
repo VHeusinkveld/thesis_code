@@ -13,7 +13,7 @@
 /** Global variables */
 int minlevel, maxlevel;         	// Grid depths
 double meps, eps;			// Maximum error and error in u fields
-double TEND = 1200.;
+double TEND = 1260.;
 
 char sim_ID[] = "krab";		        // Simulation identifier
 char sim_var[] = "None";  		// Notes if a variable is varied over runs
@@ -25,9 +25,9 @@ char sim_var[] = "None";  		// Notes if a variable is varied over runs
 /** Initialisation */
 int main() {	
     minlevel = 4;
-    maxlevel = 9;
+    maxlevel = 8;
 
-    L0 = 400.;
+    L0 = 600.;
     X0 = Y0 = Z0 = 0.;
 
     // Possibility to run for variable changes
@@ -60,9 +60,11 @@ int main() {
 event init(t=0) {
     rot.fan = true;		// Yes we want a fan
     rot.rotate = true;		// If we want it to rotate 
+    rot.start = 60;
+    rot.stop = 1140;
 
     rot.phi = 0;		// Reset for different runs
-    eps = .6;
+    eps = .7;
     
     init_physics();
 
@@ -71,7 +73,7 @@ event init(t=0) {
 	rotor_coord();
     }
         
-    while(adapt_wavelet((scalar *){fan,u,b},(double []){0.,eps,eps,eps,0.38*9.81/273},maxlevel,minlevel).nf) {
+    while(adapt_wavelet((scalar *){u,b},(double []){eps,eps,eps,0.38*9.81/273},maxlevel,minlevel).nf) {
 	foreach() {
 	    b[] = STRAT(y);
             u.x[] = WIND(y);
@@ -90,7 +92,8 @@ event init_change(i=10) {
 
 /** Adaptivity */
 event adapt(i++) {
-    adapt_wavelet((scalar *){fan,u,b},(double []){0.,eps,eps,eps,0.38*9.81/273},maxlevel,minlevel);
+    // TODO problem when there is no fan! check if 0.01 solves it
+    adapt_wavelet((scalar *){fan,u,b},(double []){0.01,eps,eps,eps,0.38*9.81/273},maxlevel,minlevel);
 }
 
 /** Progress event */

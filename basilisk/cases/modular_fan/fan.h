@@ -4,7 +4,9 @@ struct sRotor rot;  		// Rotor details structure
 scalar fan[];			// Fan volume fraction
 
 struct sRotor {
-    bool fan;	
+    bool fan;
+    double start;		// Starting time
+    double stop;		// Stopping time	
     double rampT;		// Time to start up rotor
     double P, Prho;		// Power, powerdensity 
     double R, W, A, V;		// Diameter, Thickness, Area ,Volume
@@ -28,14 +30,18 @@ void rotor_forcing();
 /** Function returning the sRotor structure, includign default properties */
 void init_rotor() {
     rot.Work = 0.;
+    if(!rot.start)
+    	rot.start = 0.;   
+    if(!rot.stop)
+    	rot.stop = 1E10;
     if(!rot.rampT)
-    	rot.rampT = 20.;
+    	rot.rampT = 120.;
     if(!rot.R)
 	rot.R = 2.;     
     if(!rot.W)
 	rot.W = 0.3;    
     if(!rot.Prho)                  
-     	rot.Prho = 1000.;		
+     	rot.Prho = 2000.;		
     if(!rot.x0)
     	rot.x0 = L0/2.;
     if(!rot.y0)
@@ -70,8 +76,8 @@ void init_rotor() {
 }
 
 /** Forcing by the rotor */
-event forcing(i = 1; i++) {
-    if(rot.fan) {
+event forcing(i++) {
+    if(rot.fan && t>rot.start && t<rot.stop) {
 	rotor_coord();
 	rotor_forcing();
     }
@@ -79,16 +85,18 @@ event forcing(i = 1; i++) {
 
 /** Rotate the rotor */
 event rotate(i++) {
-    // Change center  
-    rot.x0 += rot.xt;
-    rot.y0 += rot.yt;
-    rot.z0 += rot.zt;
+    if(t>rot.start && t<rot.stop){
+        // Change center  
+        rot.x0 += rot.xt;
+        rot.y0 += rot.yt;
+        rot.z0 += rot.zt;
 
-    // Change angles 
-    rot.theta += dt*rot.thetat;
-    rot.phi += dt*rot.phit;
+        // Change angles 
+        rot.theta += dt*rot.thetat;
+        rot.phi += dt*rot.phit;
 
-    rotor_update();
+        rotor_update();
+    }
 }
 
 /** Updating relevant rotor variables */
@@ -143,7 +151,7 @@ void rotor_forcing(){
 	foreach_dimension(){    	
              //Work in respective direction 
 	     wsgn = sign(rot.nf.x*u.x[]) + (sign(rot.nf.x*u.x[]) == 0)*sign(rot.nf.x);
-	     damp = rot.rampT > t ? t/rot.rampT : 1.;
+	     damp = rot.rampT + rot.start > t ? (t-rot.start)/rot.rampT : 1.;
 	     w = wsgn*damp*sq(rot.nf.x)*(2.)*(rot.P/rot.V)*dt;
 	     tempW += 0.5*w*pow(Delta, 3);
 	

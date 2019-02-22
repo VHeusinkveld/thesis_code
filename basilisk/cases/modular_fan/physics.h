@@ -116,8 +116,8 @@ event acceleration(i++){
 }
 
 event inflow(i++){
-    double sides = 0.04;
-    double relaxtime = dt/40.;
+    double sides = 0.08;
+    double relaxtime = dt/60.;
     foreach(){
 	if((x < sides*L0 || x > (1-sides)*L0 || 
 	    z < sides*L0 || z > (1-sides)*L0   )) {
@@ -126,7 +126,8 @@ event inflow(i++){
             u.z[] = u.z[] - u.z[]*relaxtime;
 	}
 	if((x < sides*L0 || x > (1-1.5*sides)*L0 || 
-	    z < sides*L0 || z > (1-1.5*sides)*L0)) {
+	    z < sides*L0 || z > (1-1.5*sides)*L0 ||
+	    y > (1-sides)*L0 )) {
  	    b[] = b[] + (STRAT(y) - b[])*relaxtime/1.5;
 	}
 

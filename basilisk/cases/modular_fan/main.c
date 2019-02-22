@@ -64,7 +64,7 @@ event init(t=0) {
     rot.stop = 1140;
 
     rot.phi = 0;		// Reset for different runs
-    eps = .7;
+    eps = .6;
     
     init_physics();
 
@@ -92,7 +92,6 @@ event init_change(i=10) {
 
 /** Adaptivity */
 event adapt(i++) {
-    // TODO problem when there is no fan! check if 0.01 solves it
     adapt_wavelet((scalar *){fan,u,b},(double []){0.01,eps,eps,eps,0.38*9.81/273},maxlevel,minlevel);
 }
 

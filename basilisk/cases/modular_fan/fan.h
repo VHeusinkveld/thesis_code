@@ -41,7 +41,7 @@ void init_rotor() {
     if(!rot.W)
 	rot.W = 0.3;    
     if(!rot.Prho)                  
-     	rot.Prho = 2000.;		
+     	rot.Prho = 4000.;		
     if(!rot.x0)
     	rot.x0 = L0/2.;
     if(!rot.y0)

@@ -64,7 +64,7 @@ event init(t=0) {
     rot.stop = 1140;
 
     rot.phi = 0;		// Reset for different runs
-    eps = .6;
+    eps = .5;
     
     init_physics();
 
@@ -100,7 +100,7 @@ event progress(t+=5) {
     fprintf(stderr, "i=%d t=%g p=%d u=%d b=%d \n", i, t, mgp.i, mgu.i, mgb.i);
 }
 
-event dumpfields(t=60; t+=60) {
+event dumpfields(t=120; t+=120) {
     char nameDump[90];
     snprintf(nameDump, 90, "./%s/fielddump", out.dir);
     dump(file = nameDump, list = all);

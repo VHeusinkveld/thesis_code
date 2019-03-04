@@ -9,8 +9,8 @@
 #define karman 0.4      // von Karman constant 
 
 #define roughY0u 0.1    // roughness wind length 
-#define roughY0h 0.01     // roughness heat length 
-#define WIND(s) -max((0.30*log(2.*(s-roughY0u)+1.)),0.)   // log Wind profile 
+#define roughY0h 0.1     // roughness heat length 
+#define WIND(s) -max((0.0*log(2.*(s-roughY0u)+1.)),0.)   // log Wind profile 
 
 #define QFLX 0. 	// 0 (0.001 = 20wm2)
 #define BSURF ((b[0,1]-b[]*lut2[level])/(1.-lut2[level]))  // log estimate of surface b
@@ -18,6 +18,7 @@
 #define GFLX (-Lambda*(BSURF - bd))
 double Lambda = 0.005, bd = 0.;   // Grass coupling
 #define STRAT(s) gCONST/TREF*(log(30*s + a1 + 1.) - log(a1 + 1.)) + (QFLX/Lambda + bd)
+//#define STRAT(s) gCONST/TREF*(((s >= roughY0h  && s <= 5. + roughY0h) ? s/0.5 + 2 : 0.) + (s > 5 + roughY0h ? (5 + roughY0h)/0.5 + 2 : 0.)) 
 double a1 = 0.;
 
 

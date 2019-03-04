@@ -117,9 +117,9 @@ event diagnostics (t+=out.dtDiag){
 	static FILE * fpca = fopen(nameCase, "w");
 
 	if(t==0.){
-		fprintf(fpca,"L0\tinversion\thubU\tTref\txr\tyr\tzr\ttheta\tphi\tr\tW\tP\tcu\trampT\tmaxlvl\tminlvl\teps\n");
-		fprintf(fpca, "%g\t%g\t%g\t%g%g\t\t%g\t%g\t%g\t%g\t%g\t%g\t%g\t%g\t%g\t%d\t%d\t%g\n", 
-				L0,TREF/gCONST*STRAT(rot.y0)-STRAT(1.5), WIND(rot.y0),TREF, rot.x0, rot.y0, rot.z0, rot.theta, rot.phi, rot.R, rot.W, rot.P, rot.cu, rot.rampT, maxlevel, minlevel, eps);
+		fprintf(fpca,"L0\tinversion\thubU\tTref\tLambda\txr\tyr\tzr\ttheta\tphit\tr\tW\tP\tcu\trampT\tmaxlvl\tminlvl\teps\n");
+		fprintf(fpca, "%g\t%g\t%g\t%g\t%g\t%g\t%g\t%g\t%g\t%g\t%g\t%g\t%g\t%g\t%g\t%d\t%d\t%g\n", 
+				L0,TREF/gCONST*STRAT(rot.y0)-STRAT(1.5), WIND(rot.y0),TREF, Lambda, rot.x0, rot.y0, rot.z0, rot.theta, rot.phit, rot.R, rot.W, rot.P, rot.cu, rot.rampT, maxlevel, minlevel, eps);
 		
 	        fprintf(stderr,"n\tred\tEkin\tWork\tbE\n");
 		fprintf(fpout,"i\tt\tn\tred\tEkin\tWork\tbE\n");
@@ -303,9 +303,9 @@ event dts_meas(t += 1) {
 	for(int n = 0; n <= ntothor; n++) {
 	    double dist = lengthhor*n/ntothor;
 
-	    double xx = dist; 
+	    double xx = xf0; 
 	    double yy = 1.; 
-	    double zz = zf0; 
+	    double zz = dist; 
        
 	    double valb = interpolate(b, xx, yy, zz);
           
@@ -371,7 +371,7 @@ event movies(t += out.dtVisual) {
     
     translate(-rot.x0,-rot.y0,-rot.z0) {
         box(notics=false);
-        isosurface("l2", v=-0.02, color="b", min=STRAT(0.), max=STRAT(2.*rot.y0));
+        isosurface("l2", v=-0.02, color="b", min=STRAT(roughY0h), max=STRAT(2.*rot.y0));
 	draw_vof("fan", fc = {1,0,0});
     }
     translate(-rot.z0,-rot.y0, -L0){
@@ -416,22 +416,23 @@ event movies(t += out.dtVisual) {
 event slices(t=out.dtSlices; t+=out.dtSlices) {
     char nameSlice[90];
     coord slice = {1., 0., 1.};
+    int res = L0/2;
 
     for(double yTemp = 0.5; yTemp<=1; yTemp+=0.5) {
 	slice.y = yTemp/L0;
    
     	snprintf(nameSlice, 90, "%st=%05gy=%03g", out.dir_slices, t, yTemp);
     	FILE * fpsli = fopen(nameSlice, "w");
-    	output_slice(list = (scalar *){b}, fp = fpsli, n = 256, linear = true, plane=slice);
+    	output_slice(list = (scalar *){b}, fp = fpsli, n = res, linear = true, plane=slice);
     	fclose(fpsli);
     }
 
-    for(double yTemp = 2; yTemp<=2.; yTemp+=2.) {
+    for(double yTemp = 2; yTemp<=4.; yTemp+=2.) {
 	slice.y = yTemp/L0;
    
     	snprintf(nameSlice, 90, "%st=%05gy=%03g", out.dir_slices, t, yTemp);
     	FILE * fpsli = fopen(nameSlice, "w");
-    	output_slice(list = (scalar *){b}, fp = fpsli, n = 256, linear = true, plane=slice);
+    	output_slice(list = (scalar *){b}, fp = fpsli, n = res, linear = true, plane=slice);
     	fclose(fpsli);
     }
 

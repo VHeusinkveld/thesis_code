@@ -35,7 +35,7 @@ void init_rotor() {
     if(!rot.stop)
     	rot.stop = 1E10;
     if(!rot.rampT)
-    	rot.rampT = 120.;
+    	rot.rampT = 30.;
     if(!rot.R)
 	rot.R = 2.;     
     if(!rot.W)
@@ -59,12 +59,23 @@ void init_rotor() {
     	rot.phi = 0.*M_PI/180.;		// Azimuthal angle 
 
     if(rot.rotate) {
-       	rot.xt = 0;
-       	rot.yt = 0;
-       	rot.zt = 0;
-       	rot.thetat = 0.;
-     	rot.phit = -2*M_PI/240;
-    } else {
+	if(!rot.phit){
+	    rot.phit = -2*M_PI/240;
+ 	}
+	if(!rot.xt){
+	    rot.xt = 0;
+ 	}
+       	if(!rot.yt){
+	    rot.yt = 0;
+ 	}
+	if(!rot.zt){
+	    rot.zt = 0; 	
+ 	}
+	if(!rot.thetat){
+	    rot.thetat = 0.;
+ 	}
+
+	} else {
         rot.xt = 0;
         rot.yt = 0;
        	rot.zt = 0;

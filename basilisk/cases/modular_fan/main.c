@@ -13,7 +13,7 @@
 /** Global variables */
 int minlevel, maxlevel;         	// Grid depths
 double meps, eps;			// Maximum error and error in u fields
-double TEND = 1260.;
+double TEND = 1100.;
 
 char sim_ID[] = "krab";		        // Simulation identifier
 char sim_var[] = "None";  		// Notes if a variable is varied over runs
@@ -25,13 +25,17 @@ char sim_var[] = "None";  		// Notes if a variable is varied over runs
 /** Initialisation */
 int main() {	
     minlevel = 4;
-    maxlevel = 8;
+    maxlevel = 9;
 
-    L0 = 600.;
+    L0 = 700.;
     X0 = Y0 = Z0 = 0.;
 
     // Possibility to run for variable changes
-    for(rot.theta=97.*M_PI/180.; rot.theta<=110.*M_PI/180.; rot.theta+=100.*M_PI/180.) {
+    //for(double tempVar=240; tempVar<241; tempVar+=60) {
+    for(rot.Prho=1000.; rot.Prho<4001.; rot.Prho+=3000.) {
+
+	//rot.phit=-2*M_PI/tempVar;
+
         init_grid(1<<6);
 	a = av; 
 
@@ -46,7 +50,7 @@ int main() {
   	meps = 10.;					// Maximum adaptivity criterion
 	DT = 10E-5;					// For poisson solver 
         TOLERANCE=10E-6;				// For poisson solver 
-	CFL = 0.5;					// CFL condition
+	CFL = 0.8;					// CFL condition
 
 	sim_dir_create();				// Create relevant dir's
 	out.sim_i++;					// Simulation iteration
@@ -60,8 +64,8 @@ int main() {
 event init(t=0) {
     rot.fan = true;		// Yes we want a fan
     rot.rotate = true;		// If we want it to rotate 
-    rot.start = 60;
-    rot.stop = 1140;
+    rot.start = 30;
+    rot.stop = 1020;
 
     rot.phi = 0;		// Reset for different runs
     eps = .5;
@@ -73,26 +77,24 @@ event init(t=0) {
 	rotor_coord();
     }
         
-    while(adapt_wavelet((scalar *){u,b},(double []){eps,eps,eps,0.38*9.81/273},maxlevel,minlevel).nf) {
+    while(adapt_wavelet((scalar *){u,b},(double []){eps,eps,eps,0.35*9.81/273},maxlevel,minlevel).nf) {
 	foreach() {
 	    b[] = STRAT(y);
             u.x[] = WIND(y);
 	}
 	rotor_coord();
     }
- 
-
 }
 
 /** Return to standard tolerances and DTs for poisson solver */ 
 event init_change(i=10) {
     TOLERANCE=10E-3;
-    DT = 0.5;
+    DT = .5;
 }
 
 /** Adaptivity */
 event adapt(i++) {
-    adapt_wavelet((scalar *){fan,u,b},(double []){0.01,eps,eps,eps,0.38*9.81/273},maxlevel,minlevel);
+    adapt_wavelet((scalar *){fan,u,b},(double []){0.01,eps,eps,eps,.35*9.81/273},maxlevel,minlevel);
 }
 
 /** Progress event */

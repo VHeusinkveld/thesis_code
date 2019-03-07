@@ -25,14 +25,14 @@ char sim_var[] = "None";  		// Notes if a variable is varied over runs
 /** Initialisation */
 int main() {	
     minlevel = 4;
-    maxlevel = 9;
+    maxlevel = 8;
 
     L0 = 700.;
     X0 = Y0 = Z0 = 0.;
 
     // Possibility to run for variable changes
     //for(double tempVar=240; tempVar<241; tempVar+=60) {
-    for(rot.Prho=1000.; rot.Prho<4001.; rot.Prho+=3000.) {
+    for(rot.theta=90*M_PI/180; rot.theta<106*M_PI/180.; rot.theta+=3*M_PI/180) {
 
 	//rot.phit=-2*M_PI/tempVar;
 

@@ -10,7 +10,7 @@
 
 #define roughY0u 0.1    // roughness wind length 
 #define roughY0h 0.1     // roughness heat length 
-#define WIND(s) -max((0.0*log(2.*(s-roughY0u)+1.)),0.)   // log Wind profile 
+#define WIND(s) -max((0.25*log(2.*(s-roughY0u)+1.)),0.)   // log Wind profile 
 
 #define QFLX 0. 	// 0 (0.001 = 20wm2)
 #define BSURF ((b[0,1]-b[]*lut2[level])/(1.-lut2[level]))  // log estimate of surface b
@@ -124,8 +124,8 @@ event inflow(i++){
 	    z < sides*L0 || z > (1-sides)*L0 ||
  	    y > (1-2*sides)*L0 )) {
 	    u.x[] = u.x[] + (WIND(y)-u.x[])*relaxtime;
-	    u.y[] = u.y[] - u.y[]*relaxtime;
-            u.z[] = u.z[] - u.z[]*relaxtime;
+	    //u.y[] = u.y[] - u.y[]*relaxtime;
+            //u.z[] = u.z[] - u.z[]*relaxtime;
 	}
 	if((x < sides*L0 || x > (1-1.5*sides)*L0 || 
 	    z < sides*L0 || z > (1-1.5*sides)*L0 ||

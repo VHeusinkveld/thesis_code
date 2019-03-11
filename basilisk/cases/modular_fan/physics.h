@@ -10,7 +10,7 @@
 
 #define roughY0u 0.1    // roughness wind length 
 #define roughY0h 0.1     // roughness heat length 
-#define WIND(s) -max((0.25*log(2.*(s-roughY0u)+1.)),0.)   // log Wind profile 
+#define WIND(s) -max((0.20*log(2.*(s-roughY0u)+1.)),0.)   // log Wind profile 
 
 #define QFLX 0. 	// 0 (0.001 = 20wm2)
 #define BSURF ((b[0,1]-b[]*lut2[level])/(1.-lut2[level]))  // log estimate of surface b
@@ -117,22 +117,17 @@ event acceleration(i++){
 }
 
 event inflow(i++){
-    double sides = 0.08;
+    double sides = 25;
     double relaxtime = dt/40.;
     foreach(){
-	if((x < sides*L0 || x > (1-sides)*L0 || 
-	    z < sides*L0 || z > (1-sides)*L0 ||
- 	    y > (1-2*sides)*L0 )) {
+	if((x < sides || x > L0-sides || 
+	    z < sides || z > L0-sides ||
+ 	    y > L0-2*sides )) {
 	    u.x[] = u.x[] + (WIND(y)-u.x[])*relaxtime;
+ 	    b[] = b[] + (STRAT(y) - b[])*relaxtime/1.5;
 	    //u.y[] = u.y[] - u.y[]*relaxtime;
             //u.z[] = u.z[] - u.z[]*relaxtime;
 	}
-	if((x < sides*L0 || x > (1-1.5*sides)*L0 || 
-	    z < sides*L0 || z > (1-1.5*sides)*L0 ||
-	    y > (1-3*sides)*L0 )) {
- 	    b[] = b[] + (STRAT(y) - b[])*relaxtime/1.5;
-	}
-
     }
 }
 

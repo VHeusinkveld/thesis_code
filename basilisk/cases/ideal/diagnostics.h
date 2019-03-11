@@ -371,16 +371,16 @@ event movies(t += out.dtVisual) {
     
     translate(-rot.x0,-rot.y0,-rot.z0) {
         box(notics=false);
-        isosurface("l2", v=-0.02, color="b", min=STRAT(roughY0h), max=STRAT(2.*rot.y0));
+        isosurface("l2", v=-0.02, color="b", min=STRAT(0), max=STRAT(L0));
 	draw_vof("fan", fc = {1,0,0});
     }
     translate(-rot.z0,-rot.y0, -L0){
-      	squares("u.x", n = {0,0,1}, alpha=rot.z0, min=-fabs(WIND(1.5*rot.y0)), max=fabs(WIND(1.5*rot.y0)));
+      	squares("u.x", n = {0,0,1}, alpha=rot.z0, min=-fabs(WIND(rot.y0)), max=fabs(WIND(rot.y0)));
         cells(n = {0,0,1}, alpha = rot.z0);
     }
     
     translate(0.,-rot.y0,-rot.z0){
-        squares("u.x", n = {1,0,0}, alpha=rot.x0, min=-fabs(WIND(1.5*rot.y0)), max=fabs(WIND(1.5*rot.y0)));
+        squares("u.x", n = {1,0,0}, alpha=rot.x0, min=-fabs(WIND(rot.y0)), max=fabs(WIND(rot.y0)));
     }
 
     /** Save file with certain fps*/
@@ -393,16 +393,16 @@ event movies(t += out.dtVisual) {
     
     translate(-rot.x0,-rot.y0,-rot.z0) {
         box(notics=false);
-        isosurface("l2", v=-0.02, color="b", min=STRAT(0.), max=STRAT(1.5*rot.y0));
+        isosurface("l2", v=-0.02, color="b", min=STRAT(0.), max=STRAT(L0));
 	draw_vof("fan", fc = {1,0,0});
     }
     translate(-rot.z0,-rot.y0, -L0){
-      	squares("b", n = {0,0,1}, alpha=rot.z0, min=STRAT(0.), max=STRAT(1.5*rot.y0));
+      	squares("b", n = {0,0,1}, alpha=rot.z0, min=STRAT(0.), max=STRAT(L0));
         cells(n = {0,0,1}, alpha = rot.z0);
     }
     
     translate(0.,-rot.y0,-rot.z0){
-        squares("b", n = {1,0,0}, alpha=rot.x0, min=STRAT(0.), max=STRAT(1.5*rot.y0));
+        squares("b", n = {1,0,0}, alpha=rot.x0, min=STRAT(0.), max=STRAT(L0));
     }
 
     /** Save file with certain fps*/

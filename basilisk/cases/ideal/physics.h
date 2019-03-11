@@ -10,16 +10,9 @@
 
 #define roughY0u 0.1    // roughness wind length 
 #define roughY0h 0.1     // roughness heat length 
-#define WIND(s) -max((0.20*log(2.*(s-roughY0u)+1.)),0.)   // log Wind profile 
-
-#define QFLX 0. 	// 0 (0.001 = 20wm2)
-#define BSURF ((b[0,1]-b[]*lut2[level])/(1.-lut2[level]))  // log estimate of surface b
-//linear (1.5*b[] - 0.5*b[0,1])   // Estimation of surface b
-#define GFLX (-Lambda*(BSURF - bd))
-double Lambda = 0.005, bd = 0.;   // Grass coupling
-#define STRAT(s) gCONST/TREF*(log(30*s + a1 + 1.) - log(a1 + 1.)) + (QFLX/Lambda + bd)
-//#define STRAT(s) gCONST/TREF*(((s >= roughY0h  && s <= 5. + roughY0h) ? s/0.5 + 2 : 0.) + (s > 5 + roughY0h ? (5 + roughY0h)/0.5 + 2 : 0.)) 
-double a1 = 0.;
+#define WIND(s)  (-1.) 
+#define Lambda 1.
+#define STRAT(s) gCONST*(INVERSION)*s/TREF //+ gCONST/CP
 
 
 scalar b[];
@@ -36,78 +29,32 @@ struct sCase {
 };	
 
 void init_physics(){
- 	def.wind = 1.;
+ 	def.wind = WIND(1.);
         def.wphi = 0.;
 
 	b.nodump = false; // TODO
 
-	if(def.wind == 0.){    	
-	    u.n[bottom] = dirichlet(0.);
-	    u.t[bottom] = dirichlet(0.);
-	    u.n[top] = dirichlet(0.);
- 	    u.t[top] = neumann(0.);
+        u.n[bottom] = dirichlet(0.);
+       // u.t[bottom] = dirichlet(WIND(s)); // TODO
+        u.n[top] = dirichlet(0);
+       // u.t[top] = dirichlet(WIND(s));
 
-            periodic (left);
+        periodic (left);      
 	
-	} else if(fabs(def.wind) > 0.) {
-	    u.n[bottom] = dirichlet(0.);
-	    u.t[bottom] = dirichlet(0.);
-	    u.n[top] = dirichlet(0);
- 	    u.t[top] = dirichlet(WIND(y));
-
-            periodic (left);
-		
-	}        
-	
-	b[bottom] = BSURF;
+	b[bottom] = dirichlet(STRAT(y));
 	b[top] = dirichlet(STRAT(y));
 
 	#if dimension == 3
-		u.r[bottom] = dirichlet(0.); 
+		u.r[bottom] = neumann(0.); 
 		u.r[top] = neumann(0.); 
-		
-		Evis[bottom] = dirichlet(0.); // Flux is explicitly calculated
-        	Evis[top] = dirichlet(0.);
 
 		periodic(front);
 	#endif  
 	foreach() {
 		b[] = STRAT(y);
-		if(fabs(def.wind) > 0.) {
-       	            u.x[] = WIND(y);
-		}
+ 	        u.x[] = WIND(y);
 	}
 }
-
-double lut[20];
-double lut2[20];
-event init (t = 0) {
-    for (int m = 0; m <= 19; m++) {
-	double d  = (L0/((double)(1 << m)))/roughY0u;
-	double d2 = (L0/((double)(1 << m)))/roughY0h;
-
-        if (m==0) {
-	    lut[0] = 0;
-	    lut2[0] = 0;
-	} else {
-            lut[m] = sq(karman/log(L0/d - 1.));
-	}
-        lut2[m] = (log(4.*d2) - 1.)/(log(d2) - 1.);
-    }
-}
-
-#define dvdt(u) (sign(u)*lut[level]*sq(u)/Delta)
-
-event law_of_the_wall(i++){
-    double ui; //scratch for the mid-point-value estimate 
-    foreach_boundary(bottom){
-        ui = u.x[] - (dt*dvdt(u.x[])/2.); 
-        u.x[] -= dt*dvdt(ui);
-        ui = u.z[] - (dt*dvdt(u.z[])/2.);
-        u.z[] -= dt*dvdt(ui);
-    }
-}
-
 
 /* Gravity forcing */
 event acceleration(i++){
@@ -122,44 +69,17 @@ event inflow(i++){
     foreach(){
 	if((x < sides || x > L0-sides || 
 	    z < sides || z > L0-sides ||
- 	    y > L0-2*sides )) {
-	    u.x[] = u.x[] + (WIND(y)-u.x[])*relaxtime;
+ 	    y < sides || y > L0-sides )) {
+	    u.x[] = u.x[] + (WIND(s)-u.x[])*relaxtime;
  	    b[] = b[] + (STRAT(y) - b[])*relaxtime/1.5;
-	    //u.y[] = u.y[] - u.y[]*relaxtime;
-            //u.z[] = u.z[] - u.z[]*relaxtime;
+	    u.y[] = u.y[] - u.y[]*relaxtime;
+            u.z[] = u.z[] - u.z[]*relaxtime;
 	}
     }
 }
 
 mgstats mgb;
-//face vector muz; This is taken care of by Evis
 /* Diffusion */
 event tracer_diffusion(i++){
-    scalar r[];
-    /*
-    foreach_face(){
-	if(y < Y0 + 1E-10){
-            muz.x[] = 1.*mu.x[];
-   	} else {
-	    muz.x[] = 1.*mu.x[];
-        }
-    }*/
-    
-    foreach() {
-        r[] = 0;
-        if (y < Delta)
-            r[] = (QFLX + GFLX)/sq(Delta); // div needed as normalization 
-    }
-    /*
-    double flx = 0, bt = 0;
-    double fctr = CP*TREF/gCONST;
-    foreach_boundary(bottom reduction(+:flx) reduction(+:bt)) {
-        flx = flx + (QFLX + GFLX) * sq(Delta);
-         bt = bt + BSURF * sq(Delta);
-    }
-    bt = bt/sq(L0);
-    flx = flx/sq(L0);
-    fprintf(stderr, "%g %g %g %d\n", t, fctr*flx, fctr*bt/CP, i);  
-    */
-    mgb = diffusion(b, dt, mu, r = r);
+    mgb = diffusion(b, dt, mu);
 }

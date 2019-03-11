@@ -31,7 +31,7 @@ int main() {
     X0 = Y0 = Z0 = 0.;
 
     // Possibility to run for variable changes
-    for(double tempVar=60; tempVar<241; tempVar+=60) {
+    for(double tempVar=120; tempVar<241; tempVar+=60) {
     //for(rot.theta=90*M_PI/180; rot.theta<106*M_PI/180.; rot.theta+=3*M_PI/180) {
 
 	rot.phit=-2*M_PI/tempVar;

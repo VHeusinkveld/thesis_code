@@ -10,7 +10,7 @@
 
 #define roughY0u 0.1    // roughness wind length 
 #define roughY0h 0.1     // roughness heat length 
-#define WIND(s)  (-1.) 
+#define WIND(s)  (-3.) 
 #define Lambda 1.
 #define STRAT(s) gCONST*(INVERSION)*s/TREF //+ gCONST/CP
 
@@ -35,9 +35,9 @@ void init_physics(){
 	b.nodump = false; // TODO
 
         u.n[bottom] = dirichlet(0.);
-       // u.t[bottom] = dirichlet(WIND(s)); // TODO
+        u.t[bottom] = dirichlet(WIND(s)); 
         u.n[top] = dirichlet(0);
-       // u.t[top] = dirichlet(WIND(s));
+        u.t[top] = dirichlet(WIND(s));
 
         periodic (left);      
 	
@@ -45,8 +45,10 @@ void init_physics(){
 	b[top] = dirichlet(STRAT(y));
 
 	#if dimension == 3
-		u.r[bottom] = neumann(0.); 
-		u.r[top] = neumann(0.); 
+		u.r[bottom] = dirichlet(WIND(s));
+                u.r[top] = dirichlet(WIND(s));
+	        u.t[bottom] = dirichlet(0.); 
+		u.t[top] = dirichlet(0.); 
 
 		periodic(front);
 	#endif  

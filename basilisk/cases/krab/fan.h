@@ -163,8 +163,8 @@ void rotor_forcing(){
              //Work in respective direction 
 	     wsgn = sign(rot.nf.x*u.x[]) + (sign(rot.nf.x*u.x[]) == 0)*sign(rot.nf.x);
 	     damp = rot.rampT + rot.start > t ? (t-rot.start)/rot.rampT : 1.;
-	     w = wsgn*damp*sq(rot.nf.x)*(2.)*(rot.P/rot.V)*dt;
-	     tempW += 0.5*w*pow(Delta, 3);
+	     w = wsgn*damp*sq(rot.nf.x)*(2.)*rot.P*dt*rot.V/pow(Delta,3);
+	     tempW += fabs(w);
 	
 	     // New kinetic energy
 	      utemp = sq(u.x[]) + w;
@@ -186,8 +186,9 @@ void rotor_forcing(){
 		wsgn = sign(rot.nf.x*u.x[]) + (sign(rot.nf.x*u.x[]) == 0)*sign(rot.nf.x);
 		damp = rot.rampT > t ? t/rot.rampT : 1.;
 		corrP = rot.diaVol > 0. ? rot.V/rot.diaVol : 1.;
+                corrP = corrP > 2. ? 1. : corrP;
 		w = wsgn*fan[]*damp*sq(rot.nf.x)*(2./rho[])*(corrP*rot.P/rot.V)*dt;
-		tempW += 0.5*rho[]*w*dv();
+		tempW += fabs(w);
 
 		// New kinetic energy
 		utemp = sq(u.x[]) + w;

@@ -14,13 +14,10 @@
 
 #define QFLX 0. 	// 0 (0.001 = 20wm2)
 #define BSURF ((b[0,1]-b[]*lut2[level])/(1.-lut2[level]))  // log estimate of surface b
-//linear (1.5*b[] - 0.5*b[0,1])   // Estimation of surface b
 #define GFLX (-Lambda*(BSURF - bd))
 double Lambda = 0.005, bd = 0.;   // Grass coupling
 #define STRAT(s) gCONST/TREF*(log(30*s + a1 + 1.) - log(a1 + 1.)) + (QFLX/Lambda + bd)
-//#define STRAT(s) gCONST/TREF*(((s >= roughY0h  && s <= 5. + roughY0h) ? s/0.5 + 2 : 0.) + (s > 5 + roughY0h ? (5 + roughY0h)/0.5 + 2 : 0.)) 
 double a1 = 0.;
-
 
 scalar b[];
 scalar * tracers = {b};
@@ -41,30 +38,19 @@ void init_physics(){
 
 	b.nodump = false; // TODO
 
-	if(def.wind == 0.){    	
-	    u.n[bottom] = dirichlet(0.);
-	    u.t[bottom] = dirichlet(0.);
-	    u.n[top] = dirichlet(0.);
- 	    u.t[top] = neumann(0.);
-
-            periodic (left);
-	
-	} else if(fabs(def.wind) > 0.) {
-	    u.n[bottom] = dirichlet(0.);
-	    u.t[bottom] = dirichlet(0.);
-	    u.n[top] = dirichlet(0);
- 	    u.t[top] = dirichlet(WIND(y));
-
-            periodic (left);
+        u.n[bottom] = dirichlet(0.);
+        u.t[bottom] = dirichlet(0.);
+        u.n[top] = dirichlet(0);
+        u.t[top] = dirichlet(WIND(y));
+        periodic (left);
 		
-	}        
-	
 	b[bottom] = BSURF;
 	b[top] = dirichlet(STRAT(y));
 
 	#if dimension == 3
+		u.r[top] = dirichlet(WIND(y));
 		u.r[bottom] = dirichlet(0.); 
-		u.r[top] = neumann(0.); 
+		u.t[top] = neumann(0.); 
 		
 		Evis[bottom] = dirichlet(0.); // Flux is explicitly calculated
         	Evis[top] = dirichlet(0.);

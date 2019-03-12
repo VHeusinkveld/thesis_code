@@ -5,12 +5,12 @@
 #define CP 1005.	// C_p for air 
 #define gCONST 9.81	// Gravitational constant
 #define TREF 273.	// Kelvin
-#define INVERSION .2 	// Kelvin per meter
+#define INVERSION .5 	// Kelvin per meter
 #define karman 0.4      // von Karman constant 
 
 #define roughY0u 0.1    // roughness wind length 
 #define roughY0h 0.1     // roughness heat length 
-#define WIND(s)  (-3.) 
+#define WIND(s)  (-1.) 
 #define Lambda 1.
 #define STRAT(s) gCONST*(INVERSION)*s/TREF //+ gCONST/CP
 
@@ -67,13 +67,13 @@ event acceleration(i++){
 
 event inflow(i++){
     double sides = 25;
-    double relaxtime = dt/40.;
+    double relaxtime = dt/25.;
     foreach(){
 	if((x < sides || x > L0-sides || 
 	    z < sides || z > L0-sides ||
  	    y < sides || y > L0-sides )) {
 	    u.x[] = u.x[] + (WIND(s)-u.x[])*relaxtime;
- 	    b[] = b[] + (STRAT(y) - b[])*relaxtime/1.5;
+ 	    b[] = b[] + (STRAT(y) - b[])*relaxtime;
 	    u.y[] = u.y[] - u.y[]*relaxtime;
             u.z[] = u.z[] - u.z[]*relaxtime;
 	}

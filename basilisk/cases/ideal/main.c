@@ -13,10 +13,10 @@
 /** Global variables */
 int minlevel, maxlevel;         	// Grid depths
 double meps, eps;			// Maximum error and error in u fields
-double TEND = 580.;
+double TEND = 1020;
 
 char sim_ID[] = "krab";		        // Simulation identifier
-char sim_var[] = "None";  		// Notes if a variable is varied over runs
+char sim_var[] = "Trot";  		// Notes if a variable is varied over runs
 
 #include "physics.h"			// Physics of the simulation 
 #include "fan.h"			// Include a fan
@@ -25,16 +25,16 @@ char sim_var[] = "None";  		// Notes if a variable is varied over runs
 /** Initialisation */
 int main() {	
     minlevel = 4;
-    maxlevel = 8;
+    maxlevel = 9;
 
-    L0 = 500.;
+    L0 = 450.;
     X0 = Y0 = Z0 = 0.;
 
     // Possibility to run for variable changes
-    for(double tempVar=120; tempVar<241; tempVar+=60) {
+    for(double tempVar=90; tempVar<110; tempVar+=3) {
     //for(rot.theta=90*M_PI/180; rot.theta<106*M_PI/180.; rot.theta+=3*M_PI/180) {
-
-	rot.phit=-2*M_PI/tempVar;
+	
+	rot.theta = tempVar*M_PI/180;
 
         init_grid(1<<6);
 	a = av; 
@@ -65,7 +65,7 @@ event init(t=0) {
     rot.fan = true;		// Yes we want a fan
     rot.rotate = true;		// If we want it to rotate 
     rot.start = 30;
-    rot.stop = 540;
+    rot.stop = 990;
 
     rot.phi = 0;		// Reset for different runs
     eps = .5;

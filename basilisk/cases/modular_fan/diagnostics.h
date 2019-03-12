@@ -98,7 +98,7 @@ event diagnostics (t+=out.dtDiag){
 	/** Assign values to respective global sturcture vars */ 
 	dia.diss = 1.*tempDiss;
 	dia.bE = 1.*bEnergy;
-	rot.diaVol = dia.rotVol = 1.*tempVol;
+	dia.rotVol = 1.*tempVol;
 	dia.Ekin = 1.*tempEkin;
 	
 	/** Check if fan volume is within twenty percent of definition */

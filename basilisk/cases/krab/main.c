@@ -25,7 +25,7 @@ char sim_var[] = "None";  		// Notes if a variable is varied over runs
 /** Initialisation */
 int main() {	
     minlevel = 4;
-    maxlevel = 9;
+    maxlevel = 8;
 
     L0 = 650.;
     X0 = Y0 = Z0 = 0.;

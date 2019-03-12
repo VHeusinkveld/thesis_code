@@ -153,18 +153,24 @@ void rotor_coord() {
 
 /** Function returning new velocities based on a rotor forcing.
 This is a function of powerdensity, width, direction, ramp-time, and diagnosed volume */
+
 void rotor_forcing(){
     double tempW = 0.;
+    double tempVol = 0.;
     double w, wsgn, damp, usgn, utemp, corrP;
 
+    foreach(reduction(+:tempVol)){
+         tempVol += dv()*fan[];
+    }
+    rot.diaVol = 1*tempVol;    
     Point point = locate(rot.x0, rot.y0, rot.z0);
     if(fan[] == 0.){
 	foreach_dimension(){    	
              //Work in respective direction 
 	     wsgn = sign(rot.nf.x*u.x[]) + (sign(rot.nf.x*u.x[]) == 0)*sign(rot.nf.x);
 	     damp = rot.rampT + rot.start > t ? (t-rot.start)/rot.rampT : 1.;
-	     w = wsgn*damp*sq(rot.nf.x)*(2.)*rot.P*dt*rot.V/pow(Delta,3);
-	     tempW += fabs(w);
+	     w = wsgn*damp*sq(rot.nf.x)*(2.)*rot.P/pow(Delta,3)*dt;
+	     tempW += fabs(w)/2*pow(Delta,3);
 	
 	     // New kinetic energy
 	      utemp = sq(u.x[]) + w;
@@ -179,16 +185,15 @@ void rotor_forcing(){
          }
      } else {
 
-     foreach(reduction(+:tempW)) {		
-        if(fan[] > 0.) {
-            foreach_dimension() {
+     foreach(reduction(+:tempW)) {	
+	        if(fan[] > 0.) {
+                foreach_dimension() {
 	        // Work in respective direction 
 		wsgn = sign(rot.nf.x*u.x[]) + (sign(rot.nf.x*u.x[]) == 0)*sign(rot.nf.x);
-		damp = rot.rampT > t ? t/rot.rampT : 1.;
+  	        damp = rot.rampT + rot.start > t ? (t-rot.start)/rot.rampT : 1.;
 		corrP = rot.diaVol > 0. ? rot.V/rot.diaVol : 1.;
-                corrP = corrP > 2. ? 1. : corrP;
 		w = wsgn*fan[]*damp*sq(rot.nf.x)*(2./rho[])*(corrP*rot.P/rot.V)*dt;
-		tempW += fabs(w);
+		tempW += dv()*fabs(w)/2;
 
 		// New kinetic energy
 		utemp = sq(u.x[]) + w;
@@ -198,10 +203,11 @@ void rotor_forcing(){
 			 -1.*(u.x[] <  0)*(utemp > 0); 
 
 		//u.x[] = usgn*sqrt(fabs(utemp));
-		u.x[] = usgn*min(sqrt(fabs(utemp)), damp*1.5*rot.cu); // Limiting the maximum speed
+		u.x[] = usgn*min(sqrt(fabs(utemp)), sq(damp)*1.5*rot.cu); // Limiting the maximum speed
 	     }
 	}
-    }
+    }    
     }
     rot.Work += tempW;
 }
+

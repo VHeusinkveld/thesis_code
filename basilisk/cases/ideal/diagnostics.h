@@ -98,7 +98,7 @@ event diagnostics (t+=out.dtDiag){
 	/** Assign values to respective global sturcture vars */ 
 	dia.diss = 1.*tempDiss;
 	dia.bE = 1.*bEnergy;
-	rot.diaVol = dia.rotVol = 1.*tempVol;
+	dia.rotVol = 1.*tempVol;
 	dia.Ekin = 1.*tempEkin;
 	
 	/** Check if fan volume is within twenty percent of definition */
@@ -266,7 +266,7 @@ event refvelocity(t+=1) {
     double vels1[ntot];	
 
     double xf0 = 0;
-    double yf0 = 3;
+    double yf0 = rot.y0-7;
     double zf0 = L0/2;
 
     for(int n; n < ntot; n++) {
@@ -304,7 +304,7 @@ event dts_meas(t += 1) {
 	    double dist = lengthhor*n/ntothor;
 
 	    double xx = xf0; 
-	    double yy = 1.; 
+	    double yy = rot.y0-9.; 
 	    double zz = dist; 
        
 	    double valb = interpolate(b, xx, yy, zz);
@@ -418,8 +418,8 @@ event slices(t=out.dtSlices; t+=out.dtSlices) {
     coord slice = {1., 0., 1.};
     int res = L0/2;
 
-    for(double yTemp = 0.5; yTemp<=1; yTemp+=0.5) {
-	slice.y = yTemp/L0;
+    for(double yTemp = 6; yTemp<=13; yTemp+=2.) {
+	slice.y = (rot.y0 - yTemp)/L0;
    
     	snprintf(nameSlice, 90, "%st=%05gy=%03g", out.dir_slices, t, yTemp);
     	FILE * fpsli = fopen(nameSlice, "w");
@@ -427,8 +427,8 @@ event slices(t=out.dtSlices; t+=out.dtSlices) {
     	fclose(fpsli);
     }
 
-    for(double yTemp = 2; yTemp<=4.; yTemp+=2.) {
-	slice.y = yTemp/L0;
+    for(double yTemp = 0; yTemp<=1.; yTemp+=2.) {
+	slice.y = (rot.y0 - yTemp)/L0;
    
     	snprintf(nameSlice, 90, "%st=%05gy=%03g", out.dir_slices, t, yTemp);
     	FILE * fpsli = fopen(nameSlice, "w");

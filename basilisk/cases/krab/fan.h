@@ -60,7 +60,7 @@ void init_rotor() {
 
     if(rot.rotate) {
 	if(!rot.phit){
-	    rot.phit = -2*M_PI/240;
+	    rot.phit = 2*M_PI/240;
  	}
 	if(!rot.xt){
 	    rot.xt = 0;

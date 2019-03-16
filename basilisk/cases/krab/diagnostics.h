@@ -119,7 +119,7 @@ event diagnostics (t+=out.dtDiag){
 	if(t==0.){
 		fprintf(fpca,"L0\tinversion\thubU\tTref\tLambda\txr\tyr\tzr\ttheta\tphit\tr\tW\tP\tcu\trampT\tmaxlvl\tminlvl\teps\n");
 		fprintf(fpca, "%g\t%g\t%g\t%g\t%g\t%g\t%g\t%g\t%g\t%g\t%g\t%g\t%g\t%g\t%g\t%d\t%d\t%g\n", 
-				L0,TREF/gCONST*STRAT(rot.y0)-STRAT(1.5), WIND(rot.y0),TREF, Lambda, rot.x0, rot.y0, rot.z0, rot.theta, rot.phit, rot.R, rot.W, rot.P, rot.cu, rot.rampT, maxlevel, minlevel, eps);
+				L0,TREF/gCONST*STRAT(rot.y0), WIND(rot.y0),TREF, Lambda, rot.x0, rot.y0, rot.z0, rot.theta, rot.phit, rot.R, rot.W, rot.P, rot.cu, rot.rampT, maxlevel, minlevel, eps);
 		
 	        fprintf(stderr,"n\tred\tEkin\tWork\tbE\n");
 		fprintf(fpout,"i\tt\tn\tred\tEkin\tWork\tbE\n");
@@ -367,20 +367,16 @@ event movies(t += out.dtVisual) {
     lambda2(u,l2);
     boundary({l2});
     
-    view(fov=25, tx = 0., ty = 0., phi=bvsets.phi, theta=bvsets.theta, width = 800, height = 800);
+    view(fov=25, tx = 0., ty = 0., phi=M_PI/2., theta=M_PI/2., width = 800, height = 800);
     
     translate(-rot.x0,-rot.y0,-rot.z0) {
         box(notics=false);
         isosurface("l2", v=-0.02, color="b", min=STRAT(roughY0h), max=STRAT(2.*rot.y0));
 	draw_vof("fan", fc = {1,0,0});
     }
-    translate(-rot.z0,-rot.y0, -L0){
-      	squares("u.x", n = {0,0,1}, alpha=rot.z0, min=-fabs(WIND(1.5*rot.y0)), max=fabs(WIND(1.5*rot.y0)));
-        cells(n = {0,0,1}, alpha = rot.z0);
-    }
-    
-    translate(0.,-rot.y0,-rot.z0){
-        squares("u.x", n = {1,0,0}, alpha=rot.x0, min=-fabs(WIND(1.5*rot.y0)), max=fabs(WIND(1.5*rot.y0)));
+   
+    translate(-rot.x0,0,-rot.z0){
+        squares("b", n = {0,1,0}, alpha=2, min=0.8*STRAT(2), max=1.2*STRAT(2));
     }
 
     /** Save file with certain fps*/
@@ -389,7 +385,7 @@ event movies(t += out.dtVisual) {
     save(nameVid1);
     clear();
 
-    view(fov=25, tx = 0., ty = 0., phi=bvsets.phi, theta=bvsets.theta, width = 800, height = 800);
+    view(fov=25, tx = 0., ty = 0., phi=bvsets.phi, theta=bvsets.theta, width = 1200, height = 1200);
     
     translate(-rot.x0,-rot.y0,-rot.z0) {
         box(notics=false);

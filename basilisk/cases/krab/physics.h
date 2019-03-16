@@ -5,19 +5,20 @@
 #define CP 1005.	// C_p for air 
 #define gCONST 9.81	// Gravitational constant
 #define TREF 273.	// Kelvin
-#define INVERSION .2 	// Kelvin per meter
+#define INVERSION .5 	// Kelvin per meter
 #define karman 0.4      // von Karman constant 
 
 #define roughY0u 0.1    // roughness wind length 
 #define roughY0h 0.1     // roughness heat length 
-#define WIND(s) -max((0.20*log(2.*(s-roughY0u)+1.)),0.)   // log Wind profile 
+#define WIND(s) (-max((0.3*log(2.*(s - roughY0u) + 1.)),0.))   // log Wind profile 
 
 #define QFLX 0. 	// 0 (0.001 = 20wm2)
 #define BSURF ((b[0,1]-b[]*lut2[level])/(1.-lut2[level]))  // log estimate of surface b
+//#define BSURF (1.5*b[] - 0.5*b[0, 1])
 #define GFLX (-Lambda*(BSURF - bd))
 double Lambda = 0.005, bd = 0.;   // Grass coupling
-#define STRAT(s) gCONST/TREF*(log(30*s + a1 + 1.) - log(a1 + 1.)) + (QFLX/Lambda + bd)
-double a1 = 0.;
+#define STRAT(s) max(gCONST/TREF*(log(5*(s - roughY0h) + 1) - log(1)), 0) + (QFLX/Lambda + bd)
+//#define STRAT(s) gCONST/TREF*s*INVERSION
 
 scalar b[];
 scalar * tracers = {b};
@@ -65,7 +66,7 @@ void init_physics(){
 		}
 	}
 }
-
+//TODO check with a fresh head
 double lut[20];
 double lut2[20];
 event init (t = 0) {
@@ -77,9 +78,9 @@ event init (t = 0) {
 	    lut[0] = 0;
 	    lut2[0] = 0;
 	} else {
-            lut[m] = sq(karman/log(L0/d - 1.));
-	}
-        lut2[m] = (log(4.*d2) - 1.)/(log(d2) - 1.);
+            lut[m] = sq(karman/(log(d) - 1.));
+	    lut2[m] = (log(4.*d2) - 1.)/(log(d2) - 1.);
+        }
     }
 }
 
@@ -104,16 +105,20 @@ event acceleration(i++){
 }
 
 event inflow(i++){
-    double sides = 25;
-    double relaxtime = dt/25.;
+    double sides = 50;
+    double relaxtime = dt;
     foreach(){
-	if((x < sides || x > L0-sides || 
-	    z < sides || z > L0-sides ||
- 	    y > L0-2*sides )) {
-	    u.x[] = u.x[] + (WIND(y)-u.x[])*relaxtime;
- 	    b[] = b[] + (STRAT(y) - b[])*relaxtime;
-	    u.y[] = u.y[] - u.y[]*relaxtime;
-            u.z[] = u.z[] - u.z[]*relaxtime;
+	//TODO fix this stuff here!!
+	if((x < sides || x > L0-sides)){// ||
+	   //(z < sides || z > L0-sides) ||
+	   //(y > L0-2*sides )) {
+	    double a = (x < sides) ? x : fabs(x-L0);
+	    a = (sides - a)/sides;
+	    
+	    u.x[] = u.x[] + a*(WIND(y)-u.x[])*relaxtime;
+ 	    b[] = b[] + a*(STRAT(y) - b[])*relaxtime;
+	    //u.y[] = u.y[] - a*u.y[]*relaxtime;
+            //u.z[] = u.z[] - a*u.z[]*relaxtime;
 	}
     }
 }
@@ -137,7 +142,7 @@ event tracer_diffusion(i++){
         if (y < Delta)
             r[] = (QFLX + GFLX)/sq(Delta); // div needed as normalization 
     }
-    /*
+    
     double flx = 0, bt = 0;
     double fctr = CP*TREF/gCONST;
     foreach_boundary(bottom reduction(+:flx) reduction(+:bt)) {
@@ -147,6 +152,6 @@ event tracer_diffusion(i++){
     bt = bt/sq(L0);
     flx = flx/sq(L0);
     fprintf(stderr, "%g %g %g %d\n", t, fctr*flx, fctr*bt/CP, i);  
-    */
+    
     mgb = diffusion(b, dt, mu, r = r);
 }

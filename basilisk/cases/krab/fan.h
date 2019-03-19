@@ -37,15 +37,15 @@ void init_rotor() {
     if(!rot.rampT)
     	rot.rampT = 30.;
     if(!rot.R)
-	rot.R = 2.;     
+	rot.R = 2.5;     
     if(!rot.W)
 	rot.W = 0.3;    
     if(!rot.Prho)                  
-     	rot.Prho = 3000.;		
+     	rot.Prho = 2000.;		
     if(!rot.x0)
     	rot.x0 = L0/2.;
     if(!rot.y0)
-	rot.y0 = 10.;
+	rot.y0 = 10.5;
     if(!rot.z0){
         #if dimension == 2
             rot.z0 = 0.;

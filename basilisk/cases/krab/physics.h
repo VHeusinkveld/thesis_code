@@ -9,15 +9,22 @@
 #define karman 0.4      // von Karman constant 
 
 #define roughY0u 0.1    // roughness wind length 
-#define roughY0h 0.1     // roughness heat length 
-#define WIND(s) (-max((0.3*log(2.*(s - roughY0u) + 1.)),0.))   // log Wind profile 
+#define roughY0h 0.1     // roughness heat length
+
+//#define WINDFUNC(s) (-max(0.2*(s)*log((s)/roughY0u),0.)) 
+//#define WIND(s) ((WINDFUNC(s + Delta/2.) - WINDFUNC(s-Delta/2.))/Delta + 0.2)
+#define WIND(s) (-max(0.2*log(s/roughY0u),0.))   // log Wind profile 
 
 #define QFLX 0. 	// 0 (0.001 = 20wm2)
+//TODO Cell average
 #define BSURF ((b[0,1]-b[]*lut2[level])/(1.-lut2[level]))  // log estimate of surface b
 //#define BSURF (1.5*b[] - 0.5*b[0, 1])
 #define GFLX (-Lambda*(BSURF - bd))
 double Lambda = 0.005, bd = 0.;   // Grass coupling
-#define STRAT(s) max(gCONST/TREF*(log(5*(s - roughY0h) + 1) - log(1)), 0) + (QFLX/Lambda + bd)
+//TODO Cell average
+//#define STRATFUNC(s) max((s)*log(0.5*(s)/roughY0u),0.) 
+//#define STRAT(s) STRATFUNC(s+0.999*Delta/2.)/Delta-STRATFUNC(s-0.999*Delta/2.)/Delta-1+bd
+#define STRAT(s) max(gCONST/TREF*(log(0.5*(s/roughY0h))), 0) + (QFLX/Lambda + bd)
 //#define STRAT(s) gCONST/TREF*s*INVERSION
 
 scalar b[];
@@ -41,21 +48,26 @@ void init_physics(){
 
         u.n[bottom] = dirichlet(0.);
         u.t[bottom] = dirichlet(0.);
-        u.n[top] = dirichlet(0);
+        u.n[top] = dirichlet(0.);
         u.t[top] = dirichlet(WIND(y));
 
         periodic (left);
 	
 	b[bottom] = BSURF;
 	b[top] = dirichlet(STRAT(y));
-
+	
 	#if dimension == 3
-	    u.r[top] = dirichlet(WIND(y));
+            u.r[top] = dirichlet(WIND(y));
 	    u.r[bottom] = dirichlet(0.); 
             u.t[top] = neumann(0.); 
 		
 	    Evis[bottom] = dirichlet(0.); // Flux is explicitly calculated
             Evis[top] = dirichlet(0.);
+	
+	    //b[right] = dirichlet(STRAT(y));
+	    //u.n[right] = WIND(y);
+      
+            //u.n[left] = neumann(0.);
 
 	    periodic(front);
 	#endif  
@@ -66,7 +78,6 @@ void init_physics(){
 		}
 	}
 }
-//TODO check with a fresh head
 double lut[20];
 double lut2[20];
 event init (t = 0) {
@@ -83,9 +94,8 @@ event init (t = 0) {
         }
     }
 }
-
+/*
 #define dvdt(u) (sign(u)*lut[level]*sq(u)/Delta)
-
 event law_of_the_wall(i++){
     double ui; //scratch for the mid-point-value estimate 
     foreach_boundary(bottom){
@@ -94,7 +104,7 @@ event law_of_the_wall(i++){
         ui = u.z[] - (dt*dvdt(u.z[])/2.);
         u.z[] -= dt*dvdt(ui);
     }
-}
+}*/
 
 
 /* Gravity forcing */
@@ -105,20 +115,20 @@ event acceleration(i++){
 }
 
 event inflow(i++){
-    double sides = 50;
-    double relaxtime = dt;
+    double sides = 75;
+    double relaxtime = dt/75;
     foreach(){
 	//TODO fix this stuff here!!
-	if((x < sides || x > L0-sides)){// ||
-	   //(z < sides || z > L0-sides) ||
-	   //(y > L0-2*sides )) {
+	if((x < sides || x > L0-sides) ||
+	   (z < sides || z > L0-sides) ||
+	   (y > L0-2*sides )) {
 	    double a = (x < sides) ? x : fabs(x-L0);
-	    a = (sides - a)/sides;
+	    a = 1.; //sq((sides - a)/sides);
 	    
 	    u.x[] = u.x[] + a*(WIND(y)-u.x[])*relaxtime;
  	    b[] = b[] + a*(STRAT(y) - b[])*relaxtime;
-	    //u.y[] = u.y[] - a*u.y[]*relaxtime;
-            //u.z[] = u.z[] - a*u.z[]*relaxtime;
+	    u.y[] = u.y[] - a*u.y[]*relaxtime;
+            u.z[] = u.z[] - a*u.z[]*relaxtime;
 	}
     }
 }
@@ -151,7 +161,7 @@ event tracer_diffusion(i++){
     }
     bt = bt/sq(L0);
     flx = flx/sq(L0);
-    fprintf(stderr, "%g %g %g %d\n", t, fctr*flx, fctr*bt/CP, i);  
+    fprintf(stderr, "soil=%g %g %g %d\n", t, fctr*flx, fctr*bt/CP, i);  
     
     mgb = diffusion(b, dt, mu, r = r);
 }

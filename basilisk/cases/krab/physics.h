@@ -5,7 +5,7 @@
 #define CP 1005.	// C_p for air 
 #define gCONST 9.81	// Gravitational constant
 #define TREF 273.	// Kelvin
-#define INVERSION .5 	// Kelvin per meter
+#define INVERSION .3 	// Kelvin per meter
 #define karman 0.4      // von Karman constant 
 
 #define roughY0u 0.1    // roughness wind length 
@@ -13,19 +13,19 @@
 
 //#define WINDFUNC(s) (-max(0.2*(s)*log((s)/roughY0u),0.)) 
 //#define WIND(s) ((WINDFUNC(s + Delta/2.) - WINDFUNC(s-Delta/2.))/Delta + 0.2)
-#define WIND(s) (-max(0.2*log(s/roughY0u),0.))   // log Wind profile 
+#define WIND(s) 0.//(-max(0.1*log(s/roughY0u),0.))   // log Wind profile 
 
 #define QFLX 0. 	// 0 (0.001 = 20wm2)
 //TODO Cell average
-#define BSURF ((b[0,1]-b[]*lut2[level])/(1.-lut2[level]))  // log estimate of surface b
-//#define BSURF (1.5*b[] - 0.5*b[0, 1])
+//#define BSURF ((b[0,1]-b[]*lut2[level])/(1.-lut2[level]))  // log estimate of surface b
+#define BSURF (1.5*b[] - 0.5*b[0, 1])
 #define GFLX (-Lambda*(BSURF - bd))
 double Lambda = 0.005, bd = 0.;   // Grass coupling
 //TODO Cell average
 //#define STRATFUNC(s) max((s)*log(0.5*(s)/roughY0u),0.) 
 //#define STRAT(s) STRATFUNC(s+0.999*Delta/2.)/Delta-STRATFUNC(s-0.999*Delta/2.)/Delta-1+bd
-#define STRAT(s) max(gCONST/TREF*(log(0.5*(s/roughY0h))), 0) + (QFLX/Lambda + bd)
-//#define STRAT(s) gCONST/TREF*s*INVERSION
+//#define STRAT(s) max(gCONST/TREF*(log(0.5*(s/roughY0h))), 0) + (QFLX/Lambda + bd)
+#define STRAT(s) gCONST/TREF*s*INVERSION
 
 scalar b[];
 scalar * tracers = {b};
@@ -44,7 +44,7 @@ void init_physics(){
  	def.wind = 1.;
         def.wphi = 0.;
 
-	b.nodump = false; // TODO
+	b.nodump = false; 
 
         u.n[bottom] = dirichlet(0.);
         u.t[bottom] = dirichlet(0.);
@@ -115,8 +115,8 @@ event acceleration(i++){
 }
 
 event inflow(i++){
-    double sides = 75;
-    double relaxtime = dt/75;
+    double sides = 50;
+    double relaxtime = dt/50;
     foreach(){
 	//TODO fix this stuff here!!
 	if((x < sides || x > L0-sides) ||

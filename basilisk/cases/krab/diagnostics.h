@@ -221,8 +221,8 @@ event fanvelocity(t+=1) {
     FILE * fpstr = fopen(nameStrvel, "w");
     fprintf(fpstr, "R,v,vx,vy,vz\n");
         
-    double length = 200;
-    int ntot = 200;
+    double length = min(200,L0);
+    int ntot = min(200,L0);
     double vels1[ntot];	
 
     double xf0 = rot.x0;
@@ -261,8 +261,8 @@ event refvelocity(t+=1) {
     FILE * fpstr = fopen(nameRefvel, "w");
     fprintf(fpstr, "x,v,vx,vy,vz\n");
         
-    double length = 300.;
-    int ntot = 300.;
+    double length = min(300.,L0);
+    int ntot = min(300.,L0);
     double vels1[ntot];	
 
     double xf0 = rot.x0 - length/2*cos(M_PI/6);
@@ -293,8 +293,8 @@ event dts_meas(t += 1) {
         FILE * fpstrhorS = fopen(nameDtshorS, "w");
         fprintf(fpstrhorS, "x,y,z,b\n");
         
-	double lengthhorS = 600.;
-        int ntothorS = 600;
+	double lengthhorS = min(600., L0);
+        int ntothorS = min(600, L0);
 	
 	double xf0S = rot.x0 - lengthhorS/2*cos(M_PI/6);
 	double yf0S = 1;
@@ -317,8 +317,8 @@ event dts_meas(t += 1) {
         FILE * fpstrhorL = fopen(nameDtshorL, "w");
         fprintf(fpstrhorL, "x,y,z,b\n");
         
-	double lengthhorL = 600.;
-        int ntothorL = 600;
+	double lengthhorL = min(600., L0);
+        int ntothorL = min(600, L0);
 	
 	double xf0L = rot.x0 - lengthhorL/2*cos(120*M_PI/180);
 	double yf0L = 1;

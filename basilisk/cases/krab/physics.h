@@ -5,7 +5,7 @@
 #define CP 1005.	// C_p for air 
 #define gCONST 9.81	// Gravitational constant
 #define TREF 273.	// Kelvin
-#define INVERSION .3 	// Kelvin per meter
+#define INVERSION 0.3  // Kelvin per meter
 #define karman 0.4      // von Karman constant 
 
 #define roughY0u 0.1    // roughness wind length 
